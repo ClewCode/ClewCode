@@ -28,7 +28,9 @@ export async function ensureMemorySystem(): Promise<boolean> {
     } else {
       try {
         MemoryDB.getInstance().pruneMemories();
-      } catch {}
+      } catch {
+        // Startup pruning is best-effort; memory initialization must continue.
+      }
     }
     initialized = true;
     return true;

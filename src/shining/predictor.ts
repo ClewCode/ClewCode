@@ -95,7 +95,9 @@ export async function predict(ctx: ShiningContext = {}): Promise<Premonition[]> 
   try {
     const { getTasteStore } = await import('../taste/store/taste-store.js');
     tasteRules = await getTasteStore().list({ status: 'active' as any });
-  } catch {}
+  } catch {
+    /* best-effort: auxiliary failure must not affect the primary flow */
+  }
   const withScores: Premonition[] = candidates.map(c => ({
     id: id(),
     createdAt: Date.now(),

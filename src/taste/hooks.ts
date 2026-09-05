@@ -5,17 +5,23 @@
 import { collectCorrection, collectExplicitPreference, collectOutcome } from './collector.js';
 
 export function hookUserCorrection(before: string, after: string, filePath?: string): void {
-  void collectCorrection({ before, after, filePath }).catch(() => {});
+  void collectCorrection({ before, after, filePath }).catch(() => {
+    /* best-effort hook */
+  });
 }
 
 export function hookExplicitPreference(userText: string): void {
   if (!userText || userText.length < 6) return;
-  void collectExplicitPreference(userText).catch(() => {});
+  void collectExplicitPreference(userText).catch(() => {
+    /* best-effort hook */
+  });
 }
 
 export function hookOutcome(ruleText: string, success: boolean): void {
   if (!ruleText) return;
-  void collectOutcome({ ruleText, success }).catch(() => {});
+  void collectOutcome({ ruleText, success }).catch(() => {
+    /* best-effort hook */
+  });
 }
 
 // Detect if bash command is test/build/lint and succeeded
@@ -33,5 +39,9 @@ export function hookBashOutcome(command: string, exitCode: number): void {
 
 export function hookAcceptReject(accepted: boolean, ruleText?: string): void {
   if (!ruleText) return;
-  void import('./collector.js').then(m => m.collectAcceptReject({ accepted, ruleText }).catch(() => {}));
+  void import('./collector.js').then(m =>
+    m.collectAcceptReject({ accepted, ruleText }).catch(() => {
+      /* best-effort hook */
+    }),
+  );
 }

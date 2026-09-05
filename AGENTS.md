@@ -308,7 +308,6 @@ Co-located `.test.ts`/`.test.tsx` with sources (under `src/` and `tests/`), run 
 | `scripts/prebuild-version.mjs` | Writes generated version info |
 | `scripts/postbuild-inject-macro.mjs` | Post-build macro injection |
 | `scripts/bun-run.mjs` | Dev/start runner with defines |
-| `src/remote/relay-server.ts` | Relay (`bun run relay`) |
 | `src/components/CustomSelect/select.tsx` | `BaseOption.preview` + `p` toggle — side (≥100 cols) or bottom preview, live on focus |
 | `src/components/ModelPicker.tsx` | `/model` preview per model via `<Markdown>` example |
 | `src/bootstrap/tty.ts` | TTY side-effect extracted from `main.tsx` (0.9.3, 6246→6206) |

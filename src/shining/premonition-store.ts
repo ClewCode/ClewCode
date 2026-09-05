@@ -84,7 +84,9 @@ export function save(p: Premonition): void {
     writeFileSync(fp, stringify(p), 'utf8');
     try {
       unlinkSync(tmp);
-    } catch {}
+    } catch {
+      /* best-effort: auxiliary failure must not affect the primary flow */
+    }
   }
 }
 
@@ -103,11 +105,15 @@ export function list(): Premonition[] {
       if (p.expiresAt && p.expiresAt < now) {
         try {
           unlinkSync(fp);
-        } catch {}
+        } catch {
+          /* best-effort: auxiliary failure must not affect the primary flow */
+        }
         continue;
       }
       out.push(p);
-    } catch {}
+    } catch {
+      /* best-effort: auxiliary failure must not affect the primary flow */
+    }
   }
   return out.sort((a, b) => b.confidence - a.confidence);
 }
@@ -119,7 +125,9 @@ export function clear(): void {
     if (!f.endsWith('.md')) continue;
     try {
       unlinkSync(join(dir, f));
-    } catch {}
+    } catch {
+      /* best-effort: auxiliary failure must not affect the primary flow */
+    }
   }
 }
 
@@ -133,7 +141,9 @@ export function get(id: string): Premonition | undefined {
     if (p.expiresAt && p.expiresAt < Date.now()) {
       try {
         unlinkSync(fp);
-      } catch {}
+      } catch {
+        /* best-effort: auxiliary failure must not affect the primary flow */
+      }
       return undefined;
     }
     return p;

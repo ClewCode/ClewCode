@@ -132,7 +132,9 @@ export function saveIndex(index: MemoryIndex): void {
     writeFileSync(p, JSON.stringify(index, null, 2), 'utf8');
     try {
       unlinkSync(tmp);
-    } catch {}
+    } catch {
+      // Destination is already durable; stale temp cleanup is best-effort.
+    }
   }
 }
 
@@ -193,7 +195,9 @@ export function invalidateIndex(): void {
   if (existsSync(p)) {
     try {
       unlinkSync(p);
-    } catch {}
+    } catch {
+      // Cache invalidation tolerates files already removed by another process.
+    }
   }
 }
 

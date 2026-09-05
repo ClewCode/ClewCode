@@ -124,7 +124,9 @@ export async function budgetedInjectDetailed(maxTokens = 2000, includeFileHierar
           if (policyFor(p.confidence) === 'ignore') continue;
           for (const f of p.suggestedContext || []) shiningFiles.add(f.toLowerCase());
         }
-      } catch {}
+      } catch {
+        // Shining context is an optional ranking hint.
+      }
       // Score each candidate
       for (const m of memories) {
         const recency = m.lastAccessedAt

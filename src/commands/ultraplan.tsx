@@ -26,9 +26,6 @@ import { updateTaskState } from '../utils/task/framework.js';
 import { archiveRemoteSession, teleportToRemote } from '../utils/teleport.js';
 import { pollForApprovedExitPlanMode, UltraplanPollError } from '../utils/ultraplan/ccrSession.js';
 
-// TODO(prod-hardening): OAuth token may go stale over the 30min poll;
-// consider refresh.
-
 // Multi-agent exploration is slow; 30min timeout.
 const ULTRAPLAN_TIMEOUT_MS = 30 * 60 * 1000;
 export const CCR_TERMS_URL = 'https://code.claude.com/docs/en/claude-code-on-the-web';

@@ -49,7 +49,14 @@ import {
   type SessionSpawnOpts,
   type SpawnMode,
 } from './types.js';
-import { buildCCRv2SdkUrl, buildSdkUrl, decodeWorkSecret, registerWorker, sameSessionId } from './workSecret.js';
+import {
+  buildCCRv2SdkUrl,
+  buildSdkUrl,
+  decodeWorkSecret,
+  isLocalhostUrl,
+  registerWorker,
+  sameSessionId,
+} from './workSecret.js';
 
 export type BackoffConfig = {
   connInitialMs: number;
@@ -1887,7 +1894,7 @@ export async function bridgeMain(args: string[]): Promise<void> {
   const baseUrl = getBridgeBaseUrl();
 
   // For non-localhost targets, require HTTPS to protect credentials.
-  if (baseUrl.startsWith('http://') && !baseUrl.includes('localhost') && !baseUrl.includes('127.0.0.1')) {
+  if (baseUrl.startsWith('http://') && !isLocalhostUrl(baseUrl)) {
     console.error('Error: Remote Control base URL uses HTTP. Only HTTPS or localhost HTTP is allowed.');
     // eslint-disable-next-line custom-rules/no-process-exit
     process.exit(1);
@@ -2487,7 +2494,7 @@ export async function runBridgeHeadless(opts: HeadlessBridgeOpts, signal: AbortS
 
   const { getBridgeBaseUrl } = await import('./bridgeConfig.js');
   const baseUrl = getBridgeBaseUrl();
-  if (baseUrl.startsWith('http://') && !baseUrl.includes('localhost') && !baseUrl.includes('127.0.0.1')) {
+  if (baseUrl.startsWith('http://') && !isLocalhostUrl(baseUrl)) {
     throw new BridgeHeadlessPermanentError(
       'Remote Control base URL uses HTTP. Only HTTPS or localhost HTTP is allowed.',
     );

@@ -50,8 +50,8 @@ export function getMemoryDirPath(): string {
 }
 
 /**
- * Get the path to the SQLite database (legacy compat — now unused).
- * Filesystem store lives at .clew/memory/store/
+ * Get the path to the filesystem memory store at `.clew/memory/store/`.
+ * (Name is historical — this used to point at a SQLite file.)
  */
 export function getMemoryDbPath(): string {
   return join(getMemoryDirPath(), 'store');

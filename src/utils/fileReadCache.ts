@@ -1,5 +1,30 @@
-import { detectFileEncoding } from './file.js';
-import { getFsImplementation } from './fsOperations.js';
+import { logForDebugging } from './debug.js';
+import { isFsInaccessible } from './errors.js';
+import { detectEncodingForResolvedPath } from './fileRead.js';
+import { getFsImplementation, safeResolvePath } from './fsOperations.js';
+import { logError } from './log.js';
+
+/**
+ * Detects a file's text encoding. Lives here (not file.ts) so the
+ * file.ts ↔ fileReadCache.ts import cycle stays broken: file.ts consumes
+ * the cache, and the cache no longer imports file.ts back.
+ */
+export function detectFileEncoding(filePath: string): BufferEncoding {
+  try {
+    const fs = getFsImplementation();
+    const { resolvedPath } = safeResolvePath(fs, filePath);
+    return detectEncodingForResolvedPath(resolvedPath);
+  } catch (error) {
+    if (isFsInaccessible(error)) {
+      logForDebugging(`detectFileEncoding failed for expected reason: ${error.code}`, {
+        level: 'debug',
+      });
+    } else {
+      logError(error);
+    }
+    return 'utf8';
+  }
+}
 
 type CachedFileData = {
   content: string;

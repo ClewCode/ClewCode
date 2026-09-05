@@ -1,5 +1,6 @@
 // biome-ignore-all assist/source/organizeImports: ANT-ONLY import markers must not be reordered
 import { getInitialMainLoopModel } from '../../bootstrap/state.js';
+import { ProviderManager } from '../../services/ai/ProviderManager.js';
 import { isClaudeAISubscriber, isMaxSubscriber, isTeamPremiumSubscriber } from '../auth.js';
 import { getModelStrings } from './modelStrings.js';
 import { COST_TIER_3_15, COST_HAIKU_35, COST_HAIKU_45, formatModelPricing } from '../modelCost.js';
@@ -9,7 +10,6 @@ import { getAPIProvider } from './providers.js';
 import { isModelAllowed } from './modelAllowlist.js';
 import {
   getCanonicalName,
-  getClaudeAiUserDefaultModelDescription,
   getDefaultMainLoopModel,
   getDefaultSonnetModel,
   getDefaultOpusModel,
@@ -18,15 +18,58 @@ import {
   getMarketingNameForModel,
   getUserSpecifiedModelSetting,
   isOpus1mMergeEnabled,
-  getOpus46PricingSuffix,
   parseUserSpecifiedModel,
   renderDefaultModelSetting,
   type ModelSetting,
 } from './model.js';
 import { has1mContext } from '../context.js';
 import { getGlobalConfig } from '../config.js';
+import { getOpus46PricingSuffix } from '../modelCost.js';
 
 // @[MODEL LAUNCH]: Update all the available and default model option strings below.
+// getClaudeAiUserDefaultModelDescription lives here (not model.ts) so that
+// model.ts never imports modelCost.ts — that import was a dependency cycle.
+/**
+ * @[MULTI_PROVIDER] Returns a human-readable display string for the model setting.
+ * For non-Anthropic providers, shows the provider name + model.
+ */
+export function modelDisplayString(model: ModelSetting): string {
+  if (model === null) {
+    const activeProvider = ProviderManager.getInstance().getActiveProviderName();
+    if (activeProvider && activeProvider !== 'anthropic') {
+      const providerLabel = activeProvider.charAt(0).toUpperCase() + activeProvider.slice(1);
+      return `Default for ${providerLabel} (${getDefaultMainLoopModel()})`;
+    }
+    if (process.env.USER_TYPE === 'ant') {
+      return `Default for Ants (${renderDefaultModelSetting(getDefaultMainLoopModelSetting())})`;
+    } else if (isClaudeAISubscriber()) {
+      return `Default (${getClaudeAiUserDefaultModelDescription()})`;
+    }
+    return `Default (${getDefaultMainLoopModel()})`;
+  }
+  const resolvedModel = parseUserSpecifiedModel(model);
+  return model === resolvedModel ? resolvedModel : `${model} (${resolvedModel})`;
+}
+
+export function getClaudeAiUserDefaultModelDescription(fastMode = false): string {
+  // Check for env var overrides first
+  const customOpusModel = process.env.CLEW_CODE_DEFAULT_OPUS_MODEL || process.env.ANTHROPIC_DEFAULT_OPUS_MODEL;
+  const customSonnetModel = process.env.CLEW_CODE_DEFAULT_SONNET_MODEL || process.env.ANTHROPIC_DEFAULT_SONNET_MODEL;
+
+  if (isMaxSubscriber() || isTeamPremiumSubscriber()) {
+    if (customOpusModel) {
+      return `Opus (${customOpusModel}) · Most capable for complex work${fastMode ? getOpus46PricingSuffix(true) : ''}`;
+    }
+    if (isOpus1mMergeEnabled()) {
+      return `Opus with 1M context · Most capable for complex work${fastMode ? getOpus46PricingSuffix(true) : ''}`;
+    }
+    return `Opus · Most capable for complex work${fastMode ? getOpus46PricingSuffix(true) : ''}`;
+  }
+  if (customSonnetModel) {
+    return `Sonnet (${customSonnetModel}) · Best for everyday tasks`;
+  }
+  return 'Sonnet · Best for everyday tasks';
+}
 
 export type ModelOption = {
   value: ModelSetting;

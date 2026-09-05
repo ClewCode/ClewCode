@@ -38,7 +38,8 @@ import {
 import { ThemePicker } from '../ThemePicker.js';
 import { useAppState, useSetAppState, useAppStateStore } from '../../state/AppState.js';
 import { ModelPicker } from '../ModelPicker.js';
-import { modelDisplayString, isOpus1mMergeEnabled } from '../../utils/model/model.js';
+import { isOpus1mMergeEnabled } from '../../utils/model/model.js';
+import { modelDisplayString } from '../../utils/model/modelOptions.js';
 import { isBilledAsExtraUsage } from '../../utils/extraUsage.js';
 import { ClaudeMdExternalIncludesDialog } from '../ClaudeMdExternalIncludesDialog.js';
 import { ChannelDowngradeDialog, type ChannelDowngradeChoice } from '../ChannelDowngradeDialog.js';

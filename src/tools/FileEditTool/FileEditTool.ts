@@ -529,12 +529,16 @@ export const FileEditTool = buildTool({
       try {
         const { hookUserCorrection } = await import('../../taste/hooks.js');
         hookUserCorrection(actualOldString, actualNewString, absoluteFilePath);
-      } catch {}
+      } catch {
+        /* best-effort: auxiliary failure must not affect the primary flow */
+      }
     }
     try {
       const { observe } = await import('../../shining/observer.js');
       observe({ type: 'file_changed', path: absoluteFilePath });
-    } catch {}
+    } catch {
+      /* best-effort: auxiliary failure must not affect the primary flow */
+    }
     return {
       data,
     };

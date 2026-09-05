@@ -11,7 +11,6 @@ import {
 } from '../auth.js';
 import { has1mContext, is1mContextDisabled, modelSupports1M } from '../context.js';
 import { isEnvTruthy } from '../envUtils.js';
-import { formatModelPricing, getOpus46CostTier } from '../modelCost.js';
 import type { PermissionMode } from '../permissions/PermissionMode.js';
 import { getSettings } from '../settings/settings.js';
 import { capitalize } from '../stringUtils.js';
@@ -389,38 +388,15 @@ export function getCanonicalName(fullModelName: ModelName): ModelShortName {
   return firstPartyNameToCanonical(resolveOverriddenModel(fullModelName));
 }
 
-// @[MODEL LAUNCH]: Update the default model description strings shown to users.
-export function getClaudeAiUserDefaultModelDescription(fastMode = false): string {
-  // Check for env var overrides first
-  const customOpusModel = process.env.CLEW_CODE_DEFAULT_OPUS_MODEL || process.env.ANTHROPIC_DEFAULT_OPUS_MODEL;
-  const customSonnetModel = process.env.CLEW_CODE_DEFAULT_SONNET_MODEL || process.env.ANTHROPIC_DEFAULT_SONNET_MODEL;
-
-  if (isMaxSubscriber() || isTeamPremiumSubscriber()) {
-    if (customOpusModel) {
-      return `Opus (${customOpusModel}) · Most capable for complex work${fastMode ? getOpus46PricingSuffix(true) : ''}`;
-    }
-    if (isOpus1mMergeEnabled()) {
-      return `Opus with 1M context · Most capable for complex work${fastMode ? getOpus46PricingSuffix(true) : ''}`;
-    }
-    return `Opus · Most capable for complex work${fastMode ? getOpus46PricingSuffix(true) : ''}`;
-  }
-  if (customSonnetModel) {
-    return `Sonnet (${customSonnetModel}) · Best for everyday tasks`;
-  }
-  return 'Sonnet · Best for everyday tasks';
-}
+// @[MODEL LAUNCH]: the default model description strings shown to users live
+// in modelOptions.ts (getClaudeAiUserDefaultModelDescription) — kept out of
+// this module so model.ts does not import modelCost.ts (cycle break).
 
 export function renderDefaultModelSetting(setting: ModelName | ModelAlias): string {
   if (setting === 'opusplan') {
     return 'Opus in plan mode, else Sonnet';
   }
   return renderModelName(parseUserSpecifiedModel(setting));
-}
-
-export function getOpus46PricingSuffix(_fastMode?: boolean): string {
-  if (getAPIProvider() !== 'firstParty') return '';
-  const pricing = formatModelPricing(getOpus46CostTier());
-  return ` · ${pricing}`;
 }
 
 export function isOpus1mMergeEnabled(): boolean {
@@ -690,27 +666,8 @@ export function isLegacyModelRemapEnabled(): boolean {
   return !isEnvTruthy(process.env.CLEW_CODE_DISABLE_LEGACY_MODEL_REMAP);
 }
 
-/**
- * @[MULTI_PROVIDER] Returns a human-readable display string for the model setting.
- * For non-Anthropic providers, shows the provider name + model.
- */
-export function modelDisplayString(model: ModelSetting): string {
-  if (model === null) {
-    const activeProvider = ProviderManager.getInstance().getActiveProviderName();
-    if (activeProvider && activeProvider !== 'anthropic') {
-      const providerLabel = activeProvider.charAt(0).toUpperCase() + activeProvider.slice(1);
-      return `Default for ${providerLabel} (${getDefaultMainLoopModel()})`;
-    }
-    if (process.env.USER_TYPE === 'ant') {
-      return `Default for Ants (${renderDefaultModelSetting(getDefaultMainLoopModelSetting())})`;
-    } else if (isClaudeAISubscriber()) {
-      return `Default (${getClaudeAiUserDefaultModelDescription()})`;
-    }
-    return `Default (${getDefaultMainLoopModel()})`;
-  }
-  const resolvedModel = parseUserSpecifiedModel(model);
-  return model === resolvedModel ? resolvedModel : `${model} (${resolvedModel})`;
-}
+// @[MULTI_PROVIDER] modelDisplayString lives in modelOptions.ts (display layer)
+// — kept out of this module so model.ts does not import modelCost.ts (cycle break).
 
 // @[MODEL LAUNCH]: Add a marketing name mapping for the new model below.
 export function getMarketingNameForModel(modelId: string): string | undefined {

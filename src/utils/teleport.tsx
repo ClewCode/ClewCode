@@ -717,6 +717,10 @@ export async function pollRemoteSessionEvents(
     skipMetadata?: boolean;
   },
 ): Promise<PollRemoteSessionResponse> {
+  // Long polls (up to 30min) outlive access tokens — refresh when needed on
+  // every poll so a mid-poll expiry surfaces as continued polling, not a
+  // string of auth failures. The check is cached/deduped, so this is cheap.
+  await checkAndRefreshOAuthTokenIfNeeded();
   const accessToken = getClaudeAIOAuthTokens()?.accessToken;
   if (!accessToken) {
     throw new Error('No access token for polling');

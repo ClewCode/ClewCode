@@ -228,26 +228,32 @@ export class TmuxBackend implements PaneBackend {
    * Uses `tmux join-pane` to move the pane back, then reapplies main-vertical layout
    * with leader at 30%.
    */
-  async showPane(paneId: PaneId, targetWindowOrPane: string, useExternalSession = false): Promise<boolean> {
+  async showPane(paneId: PaneId, targetWindowOrPane?: string, useExternalSession = false): Promise<boolean> {
     const runTmux = useExternalSession ? runTmuxInSwarm : runTmuxInUserSession;
+    // Default to the leader/current window when no explicit target is given.
+    const target = targetWindowOrPane ?? (await this.getCurrentWindowTarget());
+    if (!target) {
+      logForDebugging(`[TmuxBackend] Failed to show pane ${paneId}: no target window resolved`);
+      return false;
+    }
 
     // join-pane -s: source pane to move
     // -t: target window/pane to join into
     // -h: join horizontally (side by side)
-    const result = await runTmux(['join-pane', '-h', '-s', paneId, '-t', targetWindowOrPane]);
+    const result = await runTmux(['join-pane', '-h', '-s', paneId, '-t', target]);
 
     if (result.code !== 0) {
       logForDebugging(`[TmuxBackend] Failed to show pane ${paneId}: ${result.stderr}`);
       return false;
     }
 
-    logForDebugging(`[TmuxBackend] Showed pane ${paneId} in ${targetWindowOrPane}`);
+    logForDebugging(`[TmuxBackend] Showed pane ${paneId} in ${target}`);
 
     // Reapply main-vertical layout with leader at 30%
-    await runTmux(['select-layout', '-t', targetWindowOrPane, 'main-vertical']);
+    await runTmux(['select-layout', '-t', target, 'main-vertical']);
 
     // Get the first pane (leader) and resize to 30%
-    const panesResult = await runTmux(['list-panes', '-t', targetWindowOrPane, '-F', '#{pane_id}']);
+    const panesResult = await runTmux(['list-panes', '-t', target, '-F', '#{pane_id}']);
 
     const panes = panesResult.stdout.trim().split('\n').filter(Boolean);
     if (panes[0]) {

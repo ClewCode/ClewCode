@@ -12,7 +12,6 @@ import { getMemoryDb } from '../../memory/db.js';
 import { ingestMemoryWorkspace } from '../../memory/ingest.js';
 import { approveMemory, forgetMemory, listPending, rejectMemory } from '../../memory/pending.js';
 import { searchMemories } from '../../memory/search.js';
-import { getAllSources } from '../../memory/store.js';
 
 // Plan E imports
 import { getMemoryWorkspaceStatus, initMemoryWorkspace } from '../../memory/workspace.js';
@@ -120,18 +119,6 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
           }
           const stats = MemoryDB.getInstance().getStats();
 
-          // Auto-migrate legacy session data
-          let migrationNote = '';
-          try {
-            const { migrateFromSessionDB } = await import('../../memory/migrateLegacy.js');
-            const migrationResult = migrateFromSessionDB();
-            if (migrationResult.sessionsImported > 0 || migrationResult.digestsImported > 0) {
-              migrationNote = `  Legacy sessions: ${migrationResult.sessionsImported} imported · ${migrationResult.digestsImported} digests`;
-            }
-          } catch {
-            /* migration unavailable */
-          }
-
           // Auto-run rebuild as final step
           const context = await budgetedInject(2000, true);
           const parts: string[] = [
@@ -144,7 +131,6 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
                 .map(([t, c]) => `${t}: ${c}`)
                 .join(', ') || '(empty)'
             }`,
-            ...(migrationNote ? [migrationNote] : []),
           ];
           if (context) {
             parts.push('', '=== Reconstructed Context ===', '', context, '', '=== End ===');
@@ -349,7 +335,9 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
             if (!MemoryDB.isInitialized()) MemoryDB.init(getMemoryDirPath());
             totalMemories = MemoryDB.getInstance().getStats().total;
           }
-        } catch {}
+        } catch {
+          /* best-effort: auxiliary failure must not affect the primary flow */
+        }
         onDone(
           [
             'Claude Memory Diagnostics (filesystem):',

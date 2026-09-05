@@ -20,6 +20,7 @@
 import { existsSync, readFileSync } from 'fs';
 import { dirname, join, resolve } from 'path';
 import { fileURLToPath } from 'url';
+import { logForDebugging } from '../../utils/debug.js';
 import type { HooksSettings } from '../../utils/settings/types.js';
 import { registerBuiltinPlugin } from '../builtinPlugins.js';
 
@@ -31,14 +32,21 @@ function pluginPath(name: string): string {
   return join(upstreamPluginsRoot, name);
 }
 
-function loadHooks(pluginRoot: string): HooksSettings | undefined {
+export function loadHooks(pluginRoot: string): HooksSettings | undefined {
   const hooksPath = join(pluginRoot, 'hooks/hooks.json');
   if (!existsSync(hooksPath)) return undefined;
 
-  const parsed = JSON.parse(readFileSync(hooksPath, 'utf8')) as {
-    hooks?: HooksSettings;
-  };
-  return parsed.hooks;
+  try {
+    const parsed = JSON.parse(readFileSync(hooksPath, 'utf8')) as {
+      hooks?: HooksSettings;
+    };
+    return parsed.hooks;
+  } catch (error) {
+    logForDebugging(
+      `[builtin-plugin] Failed to load hooks for ${pluginRoot}: ${error instanceof Error ? error.message : String(error)}`,
+    );
+    return undefined;
+  }
 }
 
 function registerUpstreamPlugin(options: {

@@ -9,7 +9,12 @@ import { type DebugFilter, parseDebugFilter, shouldShowDebugMessage } from './de
 import { getClewConfigHomeDir, isEnvTruthy } from './envUtils.js';
 import { getFsImplementation } from './fsOperations.js';
 import { writeToStderr } from './process.js';
-import { jsonStringify } from './slowOperations.js';
+import { setSlowOperationReporter } from './slowOperations.js';
+
+// Route slow-operation warnings into the debug log. Registered here (not via a
+// slowOperations → debug import) to keep the module graph acyclic:
+// debug → slowOperations → bootstrap/state, never back.
+setSlowOperationReporter(message => logForDebugging(message));
 
 export type DebugLogLevel = 'verbose' | 'debug' | 'info' | 'warn' | 'error';
 
@@ -205,8 +210,10 @@ export function logForDebugging(
   }
 
   // Multiline messages break the jsonl output format, so make any multiline messages JSON.
+  // Plain JSON.stringify (not the instrumented slowOperations helper) — the
+  // logger must never re-enter the slow-operation tracker it reports through.
   if (hasFormattedOutput && message.includes('\n')) {
-    message = jsonStringify(message);
+    message = JSON.stringify(message);
   }
   const timestamp = new Date().toISOString();
   const output = `${timestamp} [${level.toUpperCase()}] ${message.trim()}\n`;

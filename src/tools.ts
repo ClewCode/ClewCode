@@ -39,7 +39,6 @@ const getWorkflowTool = () => {
 /* eslint-enable custom-rules/no-process-env-top-level, @typescript-eslint/no-require-imports */
 
 // Stable static imports
-import { TaskOutputTool } from './tools/TaskOutputTool/TaskOutputTool.js';
 import { WebSearchTool } from './tools/WebSearchTool/WebSearchTool.js';
 import { WebFetchTool } from './tools/WebFetchTool/WebFetchTool.js';
 import { TodoWriteTool } from './tools/TodoWriteTool/TodoWriteTool.js';
@@ -138,7 +137,6 @@ export function getAllBaseTools(): Tools {
   const workflowTool = getWorkflowTool();
 
   return [
-    TaskOutputTool,
     BashTool,
     ...(hasEmbeddedSearchTools() ? [] : [GlobTool, GrepTool]),
     ExitPlanModeV2Tool,

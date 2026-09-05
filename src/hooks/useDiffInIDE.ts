@@ -177,7 +177,6 @@ export function computeEditsFromContents(
  *
  * Resolves with the new file content.
  *
- * TODO: Time out after 5 mins of inactivity?
  * TODO: Update auto-approval UI when IDE exits
  * TODO: Close the IDE tab when the approval prompt is unmounted
  */
@@ -245,16 +244,34 @@ async function showDiffInIDE(
       ideOldPath = converter.toIDEPath(oldFilePath);
     }
 
-    const rpcResult = await callIdeRpc(
-      'openDiff',
-      {
-        old_file_path: ideOldPath,
-        new_file_path: ideOldPath,
-        new_file_contents: updatedFile,
-        tab_name: tabName,
-      },
-      ideClient,
-    );
+    // Bounded wait: an IDE extension that stays connected but never resolves
+    // must not hang the approval flow forever — time out and fall back to the
+    // terminal approval UI (the caller's catch sets hasError for exactly this).
+    const IDE_DIFF_TIMEOUT_MS = 5 * 60 * 1000;
+    let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timeoutHandle = setTimeout(() => {
+        reject(new Error(`IDE diff timed out after ${IDE_DIFF_TIMEOUT_MS / 60000} minutes of inactivity`));
+      }, IDE_DIFF_TIMEOUT_MS);
+    });
+    let rpcResult: Awaited<ReturnType<typeof callIdeRpc>>;
+    try {
+      rpcResult = await Promise.race([
+        callIdeRpc(
+          'openDiff',
+          {
+            old_file_path: ideOldPath,
+            new_file_path: ideOldPath,
+            new_file_contents: updatedFile,
+            tab_name: tabName,
+          },
+          ideClient,
+        ),
+        timeoutPromise,
+      ]);
+    } finally {
+      clearTimeout(timeoutHandle);
+    }
 
     // Convert the raw RPC result to a ToolCallResponse format
     const data = Array.isArray(rpcResult) ? rpcResult : [rpcResult];
@@ -283,12 +300,12 @@ async function showDiffInIDE(
     // Log unexpected response for debugging
     logForDebugging(`IDE diff returned unexpected response format: ${JSON.stringify(rpcResult)}`);
 
-    // Gracefully handle unexpected responses by treating as accepted
-    // This prevents falling back to normal mode when IDE extension has issues
+    // Fail closed: an unknown response must NEVER auto-accept an edit.
+    // Returning oldContent routes into the caller's reject path (no new edits).
     void cleanup();
     return {
       oldContent: oldContent,
-      newContent: updatedFile,
+      newContent: oldContent,
     };
   } catch (error) {
     logError(error as Error);

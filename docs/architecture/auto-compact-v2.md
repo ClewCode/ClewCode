@@ -13,7 +13,7 @@
 | # | กลไก | ไฟล์ | ทริกเกอร์ | สภาพ |
 |---|------|------|-----------|------|
 | 1 | tool-result budget | `utils/attachments` + `applyToolResultBudget` | per-message char cap | ตัดตอน write |
-| 2 | snip | `snipCompact.ts` | feature `HISTORY_SNIP` | ลบ message จริง |
+| 2 | snip (legacy, removed) | — | — | ถอนออกแล้วเพราะ runtime เดิมเป็น no-op/incomplete |
 | 3 | time-based microcompact | `microCompact.ts` | gap > N นาที | เคลียร์ content ของ tool_result เก่า |
 | 4 | duplicate microcompact | `microCompact.ts` | signature ซ้ำ | เคลียร์ตัวเก่า |
 | 5 | session-memory compact | `sessionMemoryCompact.ts` | ถึง threshold + flag | สรุปแล้วเก็บหาง |
@@ -240,7 +240,7 @@ queryCheckpoint('query_compact_end');
 | ของเดิม | ชะตากรรม |
 |---------|----------|
 | `applyToolResultBudget` | → `stale-tool` reducer |
-| `snipCompactIfNeeded` | → `snip` reducer (คงตรรกะ ย้าย interface) |
+| `snipCompactIfNeeded` | removed — ไม่มี runtime ที่สมบูรณ์ให้ migrate เข้า v2 |
 | `maybeTimeBasedMicrocompact` | → `stale-tool` reducer (gap เป็น input ของ `estimate()`) |
 | `maybeDuplicateToolResultMicrocompact` | → `dedupe` reducer |
 | `trySessionMemoryCompaction` | → `summarize` reducer โหมด keep-tail |

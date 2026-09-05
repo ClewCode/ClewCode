@@ -34,7 +34,9 @@ export async function loadShiningPrompt(): Promise<string | null> {
       lines.push('');
       lines.push(formatted);
     }
-  } catch {}
+  } catch {
+    /* best-effort: auxiliary failure must not affect the primary flow */
+  }
   const out = lines.join('\n');
   return out.length > 4000 ? out.slice(0, 4000) + '\n...</shining_premonitions>' : out;
 }

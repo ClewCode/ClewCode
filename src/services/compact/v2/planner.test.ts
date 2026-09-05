@@ -6,7 +6,6 @@ import { computeLimits, selectBuffer } from './limits.js';
 import { applyPlan, planCompaction } from './planner.js';
 import { dedupeReducer } from './reducers/dedupe.js';
 import { dropReducer } from './reducers/drop.js';
-import { snipReducer } from './reducers/snip.js';
 import { staleToolReducer } from './reducers/staleTool.js';
 import type { CompactSessionState, ReduceContext, Reducer } from './types.js';
 
@@ -283,12 +282,6 @@ describe('stale-tool reducer', () => {
 });
 
 describe('additional reducers contract', () => {
-  test('snipReducer has correct metadata', () => {
-    expect(snipReducer.name).toBe('snip');
-    expect(snipReducer.loss).toBe(0.35);
-    expect(snipReducer.costly).toBe(false);
-  });
-
   test('dropReducer has correct metadata and operates when target is deficit', () => {
     expect(dropReducer.name).toBe('drop');
     expect(dropReducer.loss).toBe(0.95);

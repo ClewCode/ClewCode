@@ -26,8 +26,19 @@ import { jsonStringify } from '../../utils/slowOperations.js';
 import { IT2_COMMAND, isInsideTmuxSync } from '../../utils/swarm/backends/detection.js';
 import { ensureBackendsRegistered, getBackendByType, getCachedBackend } from '../../utils/swarm/backends/registry.js';
 import type { PaneBackendType } from '../../utils/swarm/backends/types.js';
-import { getSwarmSocketName, TMUX_COMMAND } from '../../utils/swarm/constants.js';
-import { removeMemberFromTeam, setMemberMode, setMultipleMemberModes } from '../../utils/swarm/teamHelpers.js';
+import {
+  getSwarmSocketName,
+  PEER_SESSION_NAME,
+  PEER_VIEW_WINDOW_NAME,
+  TMUX_COMMAND,
+} from '../../utils/swarm/constants.js';
+import {
+  addHiddenPaneId,
+  removeHiddenPaneId,
+  removeMemberFromTeam,
+  setMemberMode,
+  setMultipleMemberModes,
+} from '../../utils/swarm/teamHelpers.js';
 import { listTasks, type Task, unassignTeammateTasks } from '../../utils/tasks.js';
 import { getTeammateStatuses, type TeammateStatus, type TeamSummary } from '../../utils/teamDiscovery.js';
 import {
@@ -531,19 +542,67 @@ async function toggleTeammateVisibility(teammate: TeammateStatus, teamName: stri
 }
 
 /**
- * Hide a teammate pane using the backend abstraction.
- * Only available for ant users (gated for dead code elimination in external builds)
+ * Hide a teammate pane using the backend that created it, and record the pane
+ * in the team file so `isHidden` reflects reality on the next refresh.
+ * Error-isolated like killTeammate: a failed hide only logs, never throws
+ * into the dialog input handler.
  */
-async function hideTeammate(_teammate: TeammateStatus, _teamName: string): Promise<void> {
-  /* noop */
+async function hideTeammate(teammate: TeammateStatus, teamName: string): Promise<void> {
+  if (!teammate.backendType) {
+    logForDebugging(`[TeamsDialog] Skipping hide for ${teammate.tmuxPaneId}: no backendType recorded`);
+    return;
+  }
+  try {
+    // Same rationale as killTeammate: only class imports are needed, never
+    // subprocess probes that could throw in a different environment.
+    await ensureBackendsRegistered();
+    const backend = getBackendByType(teammate.backendType);
+    if (!backend.supportsHideShow) {
+      logForDebugging(`[TeamsDialog] Backend ${teammate.backendType} does not support hide/show`);
+      return;
+    }
+    const hidden = await backend.hidePane(teammate.tmuxPaneId, !isInsideTmuxSync());
+    if (hidden) {
+      addHiddenPaneId(teamName, teammate.tmuxPaneId);
+    } else {
+      logForDebugging(`[TeamsDialog] Backend failed to hide pane ${teammate.tmuxPaneId}`);
+    }
+  } catch (error) {
+    logForDebugging(`[TeamsDialog] Failed to hide pane ${teammate.tmuxPaneId}: ${error}`);
+  }
 }
 
 /**
- * Show a previously hidden teammate pane using the backend abstraction.
- * Only available for ant users (gated for dead code elimination in external builds)
+ * Show a previously hidden teammate pane using the backend that created it,
+ * and drop the pane from the team file's hidden list on success.
+ * Error-isolated like killTeammate (see above).
  */
-async function showTeammate(_teammate: TeammateStatus, _teamName: string): Promise<void> {
-  /* noop */
+async function showTeammate(teammate: TeammateStatus, teamName: string): Promise<void> {
+  if (!teammate.backendType) {
+    logForDebugging(`[TeamsDialog] Skipping show for ${teammate.tmuxPaneId}: no backendType recorded`);
+    return;
+  }
+  try {
+    await ensureBackendsRegistered();
+    const backend = getBackendByType(teammate.backendType);
+    if (!backend.supportsHideShow) {
+      logForDebugging(`[TeamsDialog] Backend ${teammate.backendType} does not support hide/show`);
+      return;
+    }
+    const external = !isInsideTmuxSync();
+    // Inside tmux the backend resolves the leader window itself; on the
+    // external swarm socket there is no leader pane, so target the swarm-view
+    // window explicitly (mirrors createExternalSwarmSession).
+    const target = external ? `${PEER_SESSION_NAME}:${PEER_VIEW_WINDOW_NAME}` : undefined;
+    const shown = await backend.showPane(teammate.tmuxPaneId, target, external);
+    if (shown) {
+      removeHiddenPaneId(teamName, teammate.tmuxPaneId);
+    } else {
+      logForDebugging(`[TeamsDialog] Backend failed to show pane ${teammate.tmuxPaneId}`);
+    }
+  } catch (error) {
+    logForDebugging(`[TeamsDialog] Failed to show pane ${teammate.tmuxPaneId}: ${error}`);
+  }
 }
 
 /**

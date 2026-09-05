@@ -17,4 +17,6 @@ export function getMemoryDb(cwd: string): { cwd: string } {
   return { cwd };
 }
 
-export function closeMemoryDb(): void {}
+export function closeMemoryDb(): void {
+  // Filesystem-backed memory has no persistent database handle to close.
+}

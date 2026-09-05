@@ -1,7 +1,7 @@
 import { AgentRegistry } from './agentRegistry.js';
 import { ReportBuilder } from './reportBuilder.js';
 import { RunStore } from './runStore.js';
-import { ToolGateway } from './toolGateway.js';
+import { isDestructiveCommand, isNetworkCommand, ToolGateway } from './toolGateway.js';
 import type {
   AgentAction,
   AgentDefinition,
@@ -202,8 +202,11 @@ export class Orchestrator {
       state.status = 'running';
       await this.runStore.saveState(runId, state);
 
-      // Re-trigger execution
-      const toolInput = approval.command ? { command: approval.command } : {};
+      // Re-trigger execution with the FULL original input — reconstructing
+      // `{ command }` from the display field drops everything else (patch
+      // bodies, timeouts, …). Legacy approvals without stored input fall back
+      // to the old behavior.
+      const toolInput = (approval.input ?? (approval.command ? { command: approval.command } : {})) as unknown;
       this.runLoop(runId, { resumeFromToolCall: approval.tool, toolInput }).catch(console.error);
     } else {
       // Terminate run on denied action or handle replan
@@ -225,6 +228,7 @@ export class Orchestrator {
           options.toolInput,
         );
         state.step++;
+        state.toolCalls++;
         await this.runStore.saveState(runId, state);
       } catch (err) {
         await this.terminateRun(runId, 'failed', `Resumed tool call failed: ${(err as Error).message}`);
@@ -238,18 +242,44 @@ export class Orchestrator {
 
       if (run.status !== 'running') break;
 
-      // Check budget
+      // Enforce budgets. NB: maxCostUsd is intentionally NOT enforced here —
+      // no LLMAdapter implementation reports cost, so there is nothing to
+      // measure against. Wiring cost enforcement requires cost-reporting
+      // adapters first (until then the field is documentary).
       if (state.step >= run.budget.maxSteps) {
         await this.terminateRun(runId, 'failed', 'Max steps budget exceeded.');
         break;
       }
+      if (Date.now() - Date.parse(state.startedAt) > run.budget.timeoutMs) {
+        await this.terminateRun(runId, 'failed', 'Run timeout budget exceeded.');
+        break;
+      }
+      if (state.llmCalls >= run.budget.maxLlmCalls) {
+        await this.terminateRun(runId, 'failed', 'Max LLM calls budget exceeded.');
+        break;
+      }
 
       const agent = await this.agentRegistry.loadAgent(state.activeAgent);
+      // Per-agent step budget (agent max_steps): an agent that burns its own
+      // budget without handing off or completing is stuck — fail fast.
+      const agentStepCount = state.agentSteps[state.activeAgent] ?? 0;
+      if (agentStepCount >= agent.max_steps) {
+        await this.terminateRun(
+          runId,
+          'failed',
+          `Agent '${state.activeAgent}' exceeded its max_steps budget (${agent.max_steps}).`,
+        );
+        break;
+      }
+      state.agentSteps[state.activeAgent] = agentStepCount + 1;
+      await this.runStore.saveState(runId, state);
       const contextText = await this.buildAgentContext(run, state, agent, workflow);
       const events = await this.runStore.loadEvents(runId);
 
       await this.runStore.appendEvent(runId, 'llm.requested', {}, state.activeAgent);
       const action = await this.llmAdapter.nextAction(agent, contextText, events);
+      state.llmCalls++;
+      await this.runStore.saveState(runId, state);
       await this.runStore.appendEvent(runId, 'llm.completed', { actionType: action.type }, state.activeAgent);
 
       if (action.type === 'message') {
@@ -257,7 +287,12 @@ export class Orchestrator {
         state.taskSummary = action.content;
         await this.runStore.saveState(runId, state);
       } else if (action.type === 'tool_call') {
-        const decision = await this.toolGateway.authorize(runId, agent, action.tool, action.input);
+        // Workflow-level approval policy runs BEFORE agent permissions: a
+        // `required_for` entry forces human approval even when the agent's
+        // own permission would allow the action.
+        const workflowDecision = this.checkWorkflowApprovalPolicy(workflow, action.tool, action.input);
+        const decision =
+          workflowDecision ?? (await this.toolGateway.authorize(runId, agent, action.tool, action.input));
 
         if (decision.action === 'deny') {
           await this.runStore.appendEvent(
@@ -278,6 +313,7 @@ export class Orchestrator {
             risk: decision.risk,
             tool: action.tool,
             command: (action.input as { command?: string })?.command,
+            input: action.input,
             reason: decision.reason,
             createdAt: new Date().toISOString(),
           };
@@ -310,19 +346,30 @@ export class Orchestrator {
           break;
         } else {
           // allow
+          if (state.toolCalls >= run.budget.maxToolCalls) {
+            await this.terminateRun(runId, 'failed', 'Max tool calls budget exceeded.');
+            break;
+          }
           await this.runStore.appendEvent(runId, 'tool.allowed', {}, state.activeAgent, action.tool);
           try {
             const _out = await this.toolGateway.execute(runId, state.activeAgent, action.tool, action.input);
             state.step++;
+            state.toolCalls++;
             if (action.tool === 'repo.patch') {
               const patchedPath = (action.input as { path: string })?.path;
               if (patchedPath && !state.changedFiles.includes(patchedPath)) {
                 state.changedFiles.push(patchedPath);
               }
+              if (state.changedFiles.length > run.budget.maxChangedFiles) {
+                await this.runStore.saveState(runId, state);
+                await this.terminateRun(runId, 'failed', 'Max changed files budget exceeded.');
+                break;
+              }
             }
             await this.runStore.saveState(runId, state);
           } catch (_err) {
             state.step++;
+            state.toolCalls++;
             await this.runStore.saveState(runId, state);
           }
         }
@@ -369,6 +416,67 @@ export class Orchestrator {
     }
   }
 
+  /**
+   * Enforces `workflow.approval.required_for`. Returns an ask_user decision
+   * when the action matches a policy entry, or null to fall through to the
+   * agent-permission check in the gateway.
+   */
+  private checkWorkflowApprovalPolicy(
+    workflow: WorkflowDefinition,
+    tool: string,
+    input: unknown,
+  ): { action: 'ask_user'; approvalId: string; reason: string; risk: 'low' | 'medium' | 'high' | 'critical' } | null {
+    const required = workflow.approval?.required_for;
+    if (!required || required.length === 0) return null;
+    if (tool !== 'shell.run') return null;
+    const command = (input as { command?: string })?.command || '';
+
+    const ask = (
+      reason: string,
+      risk: 'low' | 'medium' | 'high' | 'critical',
+    ): { action: 'ask_user'; approvalId: string; reason: string; risk: 'low' | 'medium' | 'high' | 'critical' } => ({
+      action: 'ask_user',
+      approvalId: `app-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+      reason,
+      risk,
+    });
+
+    if (required.includes('shell.network') && isNetworkCommand(command)) {
+      return ask(`Workflow policy requires approval for network shell use: "${command}"`, 'high');
+    }
+    if (required.includes('shell.destructive') && isDestructiveCommand(command)) {
+      return ask(`Workflow policy requires approval for destructive shell use: "${command}"`, 'critical');
+    }
+    if (required.includes('git.commit') && /\bgit\s+commit\b/i.test(command)) {
+      return ask(`Workflow policy requires approval for git commit: "${command}"`, 'medium');
+    }
+    if (required.includes('git.push') && /\bgit\s+push\b/i.test(command)) {
+      return ask(`Workflow policy requires approval for git push: "${command}"`, 'high');
+    }
+    return null;
+  }
+
+  /**
+   * Renders `workflow.verification.required` as agent instructions. Entries
+   * use `_or_explain` semantics — the agent must either perform the check
+   * or explain why it cannot — so instruction injection IS the enforcement.
+   */
+  private buildVerificationPolicy(workflow: WorkflowDefinition): string[] {
+    const required = workflow.verification?.required;
+    if (!required || required.length === 0) return [];
+    const lines = ['Before reporting completion, all of the following apply:'];
+    for (const item of required) {
+      if (item === 'typecheck_or_explain') {
+        lines.push('- Run the project typecheck and fix or report every error; if no typecheck exists, explain why.');
+      } else if (item === 'relevant_tests_or_explain') {
+        lines.push('- Run the tests relevant to your change; if none exist, explain why.');
+      } else {
+        lines.push(`- Satisfy the verification requirement: ${item}.`);
+      }
+    }
+    return lines;
+  }
+
   private async terminateRun(runId: string, status: 'completed' | 'failed', summary: string): Promise<void> {
     const run = await this.runStore.loadRun(runId);
     run.status = status;
@@ -397,11 +505,14 @@ export class Orchestrator {
     run: AgentRun,
     state: AgentState,
     agent: AgentDefinition,
-    _workflow: WorkflowDefinition,
+    workflow: WorkflowDefinition,
   ): Promise<string> {
+    // Real remaining time: wall-clock elapsed since run start, not the full
+    // timeout re-issued every step.
+    const elapsedMs = Date.now() - Date.parse(state.startedAt);
     const budgetRemaining = {
       steps: run.budget.maxSteps - state.step,
-      timeLeftMs: run.budget.timeoutMs,
+      timeLeftMs: Math.max(0, run.budget.timeoutMs - elapsedMs),
     };
 
     const contextLines = [
@@ -416,12 +527,15 @@ export class Orchestrator {
       `Workflow: ${run.workflow}`,
       `Current Step: ${state.step}`,
       `Steps Remaining: ${budgetRemaining.steps}`,
+      `Time Remaining: ${Math.round(budgetRemaining.timeLeftMs / 1000)}s`,
+      `Tool Calls: ${state.toolCalls} / LLM Calls: ${state.llmCalls}`,
       `Changed Files: ${state.changedFiles.join(', ') || 'None'}`,
       `</runtime_state>`,
       ``,
       `<policy>`,
       `You must only use the tools explicitly authorized for you: ${agent.tools.join(', ')}`,
       `Allowed Handoff targets: ${agent.handoff_to.join(', ')}`,
+      ...this.buildVerificationPolicy(workflow),
       `</policy>`,
       ``,
       `<required_output>`,

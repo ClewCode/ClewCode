@@ -37,7 +37,7 @@ export const BUILTIN_AGENTS: Record<string, AgentDefinition> = {
       network: 'deny',
       memory_write: 'deny',
     },
-    handoff_to: ['coder', 'researcher'],
+    handoff_to: ['coder', 'researcher', 'collector'],
     systemPrompt: `You are the Planner Agent. Your job is to understand the user's task, inspect the codebase, and write a concrete technical plan.
 You must not edit any files or execute shell tests directly. Detail which files need modification and hand off to the Coder Agent.`,
   },
@@ -92,6 +92,108 @@ Be thorough. If tests fail, hand off back to the Coder Agent with details of the
     handoff_to: ['coder'],
     systemPrompt: `You are the Reviewer Agent. Your job is to inspect file diffs, search for coding standard violations, performance smells, or security bugs.
 If you approve the changes, mark the task complete. Otherwise, hand off back to the Coder Agent with clear feedback.`,
+  },
+  researcher: {
+    name: 'researcher',
+    description: 'Investigates the codebase to answer questions for the planner',
+    model: 'default',
+    max_steps: 10,
+    tools: ['repo.search', 'repo.open', 'memory.search'],
+    permissions: {
+      read_files: 'allow',
+      write_files: 'deny',
+      shell: 'deny',
+      network: 'deny',
+      memory_write: 'deny',
+    },
+    handoff_to: ['coder', 'planner'],
+    systemPrompt: `You are the Researcher Agent. Your job is to investigate the codebase and report findings back.
+You must not edit any files or run shell commands. Hand your findings to the Coder or Planner Agent.`,
+  },
+  collector: {
+    name: 'collector',
+    description: 'Gathers raw material for deep research from the repo and memory',
+    model: 'default',
+    max_steps: 12,
+    tools: ['repo.search', 'repo.open', 'memory.search'],
+    permissions: {
+      read_files: 'allow',
+      write_files: 'deny',
+      shell: 'deny',
+      network: 'deny',
+      memory_write: 'deny',
+    },
+    handoff_to: ['extractor'],
+    systemPrompt: `You are the Collector Agent. Your job is to gather raw material relevant to the research question: files, docs, and prior memories.
+You must not edit files or run shell commands. Hand the collected material to the Extractor Agent.`,
+  },
+  extractor: {
+    name: 'extractor',
+    description: 'Extracts key facts and quotes from collected material',
+    model: 'default',
+    max_steps: 12,
+    tools: ['repo.search', 'repo.open', 'memory.search'],
+    permissions: {
+      read_files: 'allow',
+      write_files: 'deny',
+      shell: 'deny',
+      network: 'deny',
+      memory_write: 'deny',
+    },
+    handoff_to: ['synthesizer'],
+    systemPrompt: `You are the Extractor Agent. Your job is to distill collected material into key facts, figures, and quotes with file references.
+You must not edit files or run shell commands. Hand the extracted facts to the Synthesizer Agent.`,
+  },
+  synthesizer: {
+    name: 'synthesizer',
+    description: 'Synthesizes extracted facts into a coherent analysis',
+    model: 'default',
+    max_steps: 12,
+    tools: ['repo.search', 'repo.open', 'memory.search'],
+    permissions: {
+      read_files: 'allow',
+      write_files: 'deny',
+      shell: 'deny',
+      network: 'deny',
+      memory_write: 'deny',
+    },
+    handoff_to: ['reporter'],
+    systemPrompt: `You are the Synthesizer Agent. Your job is to combine extracted facts into a coherent analysis, noting agreements, conflicts, and gaps.
+You must not edit files or run shell commands. Hand the synthesis to the Reporter Agent.`,
+  },
+  reporter: {
+    name: 'reporter',
+    description: 'Writes the final research report from the synthesis',
+    model: 'default',
+    max_steps: 10,
+    tools: ['repo.search', 'repo.open', 'memory.search'],
+    permissions: {
+      read_files: 'allow',
+      write_files: 'deny',
+      shell: 'deny',
+      network: 'deny',
+      memory_write: 'deny',
+    },
+    handoff_to: ['verifier'],
+    systemPrompt: `You are the Reporter Agent. Your job is to write the final research report from the synthesis: findings, evidence, and open questions.
+You must not edit files or run shell commands. Hand the report to the Verifier Agent.`,
+  },
+  verifier: {
+    name: 'verifier',
+    description: 'Verifies research claims against the codebase',
+    model: 'default',
+    max_steps: 10,
+    tools: ['repo.search', 'repo.open', 'memory.search'],
+    permissions: {
+      read_files: 'allow',
+      write_files: 'deny',
+      shell: 'deny',
+      network: 'deny',
+      memory_write: 'deny',
+    },
+    handoff_to: [],
+    systemPrompt: `You are the Verifier Agent. Your job is to spot-check the report's claims against the actual codebase and flag anything unsupported.
+You must not edit files or run shell commands.`,
   },
 };
 

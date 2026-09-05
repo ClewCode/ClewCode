@@ -1,8 +1,8 @@
 /**
  * Types for Bridge v2 — provider-agnostic Remote Control.
  *
- * Defines config, session info, and token types used by the
- * RemoteServer, RelayClient, and CLI commands.
+ * Defines config, session info, and token types used by the remote
+ * session infrastructure (RemoteSessionManager, SessionsWebSocket).
  */
 
 /** Connection mode for the remote session. */
@@ -20,7 +20,13 @@ export type RemoteServerConfig = {
   relayUrl?: string;
   /** Max concurrent sessions (default: 8). */
   maxSessions: number;
-  /** Session idle timeout in ms (default: 30 min). 0 = never expire. */
+  /**
+   * Reap timeout in ms (default: 30 min). 0 = never expire.
+   * Applies to `stopped` sessions (retention) and `starting` sessions that
+   * never attached a client. Live `running` sessions with an attached WS
+   * client are never reaped — despite the name this is NOT an idle timeout
+   * for active connections.
+   */
   idleTimeoutMs: number;
 };
 

@@ -138,6 +138,7 @@ src/generated/
 
 # Scripts
 scripts/*
+!scripts/build.mjs
 !scripts/check-shadow-pairs.sh
 !scripts/cleanup-memory-db.mjs
 ClewCode.wiki

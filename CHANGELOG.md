@@ -4,12 +4,33 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Removed
+
+- Deleted dead memory compatibility surface with zero callers: `src/memory/store.ts` (`getSource`/`upsertSource`/`deleteSource`/`insertChunks`/`getAllSources`/`searchChunksFTS`/`scanMarkdownFiles`, some of which were misleading no-ops) and `src/memory/migrateLegacy.ts` (`migrateFromSessionDB` always returned zeros); `/memory init` no longer runs the fake migration flow.
+- Removed the misleading no-op `MemoryDB.db` SQLite-compat getter; collapsed the duplicated init branches and clarified filesystem naming in `MemoryDB.init`/`getMemoryDbPath` docs.
+- Removed the stale `re-expose any MCP tools` TODOs in `src/entrypoints/mcp.ts`: the MCP server entrypoint exposes only built-in tools by design (no MCP tool proxying).
+- Removed the Bridge v2 Remote Control feature (`/remote` command): `RemoteServer`/`RemoteBridge`/`RelayClient`/`RemoteConnector`/`tokenStore`/`relay-server`/`useRemoteBridge` and the `bun run relay` script are gone. CCR (`--remote`/teleport), SSH sessions, and remote-session history infrastructure are untouched.
+
 ### Added
 
 - **New Clawd Poses:** Four new mascot poses — `blink` (closed eyes), `look-up` (eyes raised), `shocked` (wide-eyed), and `sleeping` (closed eyes + z) — plus two new click animations (`BLINK`, `STARTLE`) on `AnimatedClawd`, which now dozes off into the `sleeping` pose after 3 minutes of inactivity.
 
 ### Fixed
 
+- Fixed `ToolGateway` workspace escape: `startsWith(root)` allowed `<root>-evil/...` siblings; now requires a full segment boundary plus `realpath` symlink confinement (case-insensitive on win32/darwin).
+- Implemented missing `src/server/parseConnectUrl.ts` (`cc://` deep links; clear error for `cc+unix://`) and removed the now-unneeded `@ts-expect-error` suppressions in `main.tsx`.
+- Added the six missing built-in agents (`researcher`, `collector`, `extractor`, `synthesizer`, `reporter`, `verifier`), fixed `planner.handoff_to`, and added a builtin topology integrity test so workflows can no longer name agents that don't exist.
+- Enforced `RuntimeBudget` in the agent loop: wall-clock `timeoutMs`, `maxToolCalls`/`maxLlmCalls` counters, per-agent `max_steps`, `maxChangedFiles`, patch/output byte caps, and real `timeLeftMs` in the agent context (`maxCostUsd` stays documentary until a cost-reporting adapter exists).
+- Enforced agent `network` permission for shell commands (deny/guarded network patterns) and workflow `approval.required_for` (`shell.network`, `shell.destructive`, `git.commit`, `git.push`) ahead of agent permissions; `verification.required` is injected as `_or_explain` agent instructions.
+- Fixed approval resume dropping the original tool input (`repo.patch` resumed as `{}`): approvals now persist the full input, with fallback for legacy entries.
+- Made `RunStore` IDs race-safe (atomic `mkdir` reservation), JSONL loads tolerant of single corrupt lines, and `approvalLocks` self-cleaning.
+- IDE diff approval is now fail-closed (unknown responses reject instead of auto-accept) with a 5-minute inactivity timeout falling back to terminal approval.
+- Fixed localhost security checks to classify by URL hostname (`isLocalhostUrl`) instead of substring, so `localhost.attacker.example` no longer gets plain-ws/`v2`/HTTP treatment.
+- Long-poll `pollRemoteSessionEvents` now refreshes OAuth tokens when needed instead of failing after expiry mid-poll.
+- Marked all throwing Agent SDK function stubs as placeholders with an explicit file banner (types stay real; no new throwing stubs).
+- Broke five circular-import hotspots (1337 → 1330 cycles; checker stays soft-warning): `detectFileEncoding` moved to `fileReadCache.ts`, pricing/display helpers moved to `modelOptions.ts` so `model.ts` no longer imports `modelCost.ts`, `findGitRoot` moved to `git/gitFilesystem.ts`, mock-billing override cell extracted to leaf `utils/mockBillingOverride.ts`, and the `debug → slowOperations → debug` edge replaced with a reporter hook (plus plain `JSON.stringify` in the logger to avoid slow-tracker re-entrancy).
+- Implemented Teams dialog `h`/`H` hide-show: `hideTeammate`/`showTeammate` were no-ops since introduction and now drive `backend.hidePane`/`showPane` (tmux `break-pane`/`join-pane`) with `hiddenPaneIds` tracking, so the UI refresh reflects real pane state. `showPane` target is now optional (backend resolves the leader window).
+- Checkpoint/goal persistence failures are no longer silent: `QueryEngine` checkpoint writes/promotions and all five `sessionGoalState` writers now `logError` on failure, and `sessionGoalState` exposes `getGoalPersistenceError()` so stale on-disk state is diagnosable instead of assumed saved.
 - Hid empty and completed label-only `Thinking…` placeholders, while retaining live buffers and substantial completed previews.
 - Kept ChatGPT reasoning deltas in one live thinking block so the `∴ Thinking` text streams continuously and its spinner remains active until reasoning completes.
 - Prevented the status-line `ctx%` estimate from counting split assistant records from the same API response twice.

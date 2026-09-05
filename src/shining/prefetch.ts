@@ -30,7 +30,9 @@ export async function prefetchShiningContext(): Promise<Map<string, string>> {
     try {
       const content = await readFile(join(cwd, rel), 'utf8');
       result.set(rel, content.slice(0, 4000));
-    } catch {}
+    } catch {
+      /* best-effort: auxiliary failure must not affect the primary flow */
+    }
   }
   return result;
 }

@@ -1,6 +1,34 @@
+import { isIP } from 'node:net';
 import { ofetch } from 'ofetch';
 import { jsonParse, jsonStringify } from '../utils/slowOperations.js';
 import type { WorkSecret } from './types.js';
+
+/**
+ * True only when a URL's hostname is a loopback address. Substring checks
+ * against the whole URL are wrong: `http://localhost.attacker.example`
+ * and `http://127.0.0.1.attacker.example` contain "localhost"/"127.0.0.1"
+ * but are NOT local.
+ */
+export function isLocalhostUrl(rawUrl: string): boolean {
+  let hostname: string;
+  try {
+    hostname = new URL(rawUrl).hostname.toLowerCase();
+  } catch {
+    return false;
+  }
+  if (hostname === 'localhost') return true;
+  // Strip brackets for IPv6 literals before classification.
+  const bare = hostname.startsWith('[') && hostname.endsWith(']') ? hostname.slice(1, -1) : hostname;
+  if (isIP(bare) === 0) return false;
+  if (bare === '127.0.0.1') return true;
+  // 127.0.0.0/8 is all loopback; ::1 is IPv6 loopback.
+  if (bare.startsWith('127.')) {
+    const octets = bare.split('.');
+    if (octets.length === 4 && octets.every(o => /^\d+$/.test(o) && Number(o) >= 0 && Number(o) <= 255)) return true;
+    return false;
+  }
+  return bare === '::1';
+}
 
 /** Decode a base64url-encoded work secret and validate its version. */
 export function decodeWorkSecret(secret: string): WorkSecret {
@@ -29,7 +57,7 @@ export function decodeWorkSecret(secret: string): WorkSecret {
  * and /v1/ for production (Envoy rewrites /v1/ → /v2/).
  */
 export function buildSdkUrl(apiBaseUrl: string, sessionId: string): string {
-  const isLocalhost = apiBaseUrl.includes('localhost') || apiBaseUrl.includes('127.0.0.1');
+  const isLocalhost = isLocalhostUrl(apiBaseUrl);
   const protocol = isLocalhost ? 'ws' : 'wss';
   const version = isLocalhost ? 'v2' : 'v1';
   const host = apiBaseUrl.replace(/^https?:\/\//, '').replace(/\/+$/, '');

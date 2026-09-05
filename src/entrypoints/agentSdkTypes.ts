@@ -7,6 +7,13 @@
  *
  * SDK builders who need control protocol types should import from
  * sdk/controlTypes.ts directly.
+ *
+ * EXECUTABLE SURFACE BANNER: the *type* exports in this file are real and
+ * widely used. The *function* exports below (`tool`, `createSdkMcpServer`,
+ * `query`, session management, scheduler/bridge helpers) are signature
+ * placeholders only — every one of them throws. There is no executable SDK
+ * host in this CLI build. Do not add new throwing stubs here; either
+ * implement the function or do not export it.
  */
 
 import type { CallToolResult, ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
@@ -71,7 +78,7 @@ export function tool<Schema extends AnyZodRawShape>(
     alwaysLoad?: boolean;
   },
 ): SdkMcpToolDefinition<Schema> {
-  throw new Error('not implemented');
+  throw new Error('not implemented: executable SDK surface is unavailable in the CLI — see file banner');
 }
 
 type CreateSdkMcpServerOptions = {
@@ -88,7 +95,7 @@ type CreateSdkMcpServerOptions = {
  * If your SDK MCP calls will run longer than 60s, override CLEW_CODE_STREAM_CLOSE_TIMEOUT
  */
 export function createSdkMcpServer(_options: CreateSdkMcpServerOptions): McpSdkServerConfigWithInstance {
-  throw new Error('not implemented');
+  throw new Error('not implemented: executable SDK surface is unavailable in the CLI — see file banner');
 }
 
 export class AbortError extends Error {}
@@ -100,7 +107,9 @@ export function query(_params: {
 }): InternalQuery;
 export function query(_params: { prompt: string | AsyncIterable<SDKUserMessage>; options?: Options }): Query;
 export function query(): Query {
-  throw new Error('query is not implemented in the SDK');
+  throw new Error(
+    'query is not implemented in the SDK (CLI build): executable SDK surface is unavailable — see file banner',
+  );
 }
 
 /**
@@ -109,7 +118,9 @@ export function query(): Query {
  * @alpha
  */
 export function unstable_v2_createSession(_options: SDKSessionOptions): SDKSession {
-  throw new Error('unstable_v2_createSession is not implemented in the SDK');
+  throw new Error(
+    'unstable_v2_createSession is not implemented in the SDK (CLI build): executable SDK surface is unavailable — see file banner',
+  );
 }
 
 /**
@@ -118,7 +129,9 @@ export function unstable_v2_createSession(_options: SDKSessionOptions): SDKSessi
  * @alpha
  */
 export function unstable_v2_resumeSession(_sessionId: string, _options: SDKSessionOptions): SDKSession {
-  throw new Error('unstable_v2_resumeSession is not implemented in the SDK');
+  throw new Error(
+    'unstable_v2_resumeSession is not implemented in the SDK (CLI build): executable SDK surface is unavailable — see file banner',
+  );
 }
 
 // @[MODEL LAUNCH]: Update the example model ID in this docstring.
@@ -135,7 +148,9 @@ export function unstable_v2_resumeSession(_sessionId: string, _options: SDKSessi
  * ```
  */
 export async function unstable_v2_prompt(_message: string, _options: SDKSessionOptions): Promise<SDKResultMessage> {
-  throw new Error('unstable_v2_prompt is not implemented in the SDK');
+  throw new Error(
+    'unstable_v2_prompt is not implemented in the SDK (CLI build): executable SDK surface is unavailable — see file banner',
+  );
 }
 
 /**
@@ -153,7 +168,9 @@ export async function getSessionMessages(
   _sessionId: string,
   _options?: GetSessionMessagesOptions,
 ): Promise<SessionMessage[]> {
-  throw new Error('getSessionMessages is not implemented in the SDK');
+  throw new Error(
+    'getSessionMessages is not implemented in the SDK (CLI build): executable SDK surface is unavailable — see file banner',
+  );
 }
 
 /**
@@ -176,7 +193,9 @@ export async function getSessionMessages(
  * ```
  */
 export async function listSessions(_options?: ListSessionsOptions): Promise<SDKSessionInfo[]> {
-  throw new Error('listSessions is not implemented in the SDK');
+  throw new Error(
+    'listSessions is not implemented in the SDK (CLI build): executable SDK surface is unavailable — see file banner',
+  );
 }
 
 /**
@@ -192,7 +211,9 @@ export async function getSessionInfo(
   _sessionId: string,
   _options?: GetSessionInfoOptions,
 ): Promise<SDKSessionInfo | undefined> {
-  throw new Error('getSessionInfo is not implemented in the SDK');
+  throw new Error(
+    'getSessionInfo is not implemented in the SDK (CLI build): executable SDK surface is unavailable — see file banner',
+  );
 }
 
 /**
@@ -206,7 +227,9 @@ export async function renameSession(
   _title: string,
   _options?: SessionMutationOptions,
 ): Promise<void> {
-  throw new Error('renameSession is not implemented in the SDK');
+  throw new Error(
+    'renameSession is not implemented in the SDK (CLI build): executable SDK surface is unavailable — see file banner',
+  );
 }
 
 /**
@@ -220,7 +243,9 @@ export async function tagSession(
   _tag: string | null,
   _options?: SessionMutationOptions,
 ): Promise<void> {
-  throw new Error('tagSession is not implemented in the SDK');
+  throw new Error(
+    'tagSession is not implemented in the SDK (CLI build): executable SDK surface is unavailable — see file banner',
+  );
 }
 
 /**
@@ -238,7 +263,9 @@ export async function tagSession(
  * @returns `{ sessionId }` — UUID of the new forked session
  */
 export async function forkSession(_sessionId: string, _options?: ForkSessionOptions): Promise<ForkSessionResult> {
-  throw new Error('forkSession is not implemented in the SDK');
+  throw new Error(
+    'forkSession is not implemented in the SDK (CLI build): executable SDK surface is unavailable — see file banner',
+  );
 }
 
 // ============================================================================
@@ -319,7 +346,7 @@ export function watchScheduledTasks(_opts: {
   signal: AbortSignal;
   getJitterConfig?: () => CronJitterConfig;
 }): ScheduledTasksHandle {
-  throw new Error('not implemented');
+  throw new Error('not implemented: executable SDK surface is unavailable in the CLI — see file banner');
 }
 
 /**
@@ -328,7 +355,7 @@ export function watchScheduledTasks(_opts: {
  * @internal
  */
 export function buildMissedTaskNotification(_missed: CronTask[]): string {
-  throw new Error('not implemented');
+  throw new Error('not implemented: executable SDK surface is unavailable in the CLI — see file banner');
 }
 
 /**
@@ -399,5 +426,5 @@ export type RemoteControlHandle = {
  * @internal
  */
 export async function connectRemoteControl(_opts: ConnectRemoteControlOptions): Promise<RemoteControlHandle | null> {
-  throw new Error('not implemented');
+  throw new Error('not implemented: executable SDK surface is unavailable in the CLI — see file banner');
 }

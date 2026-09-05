@@ -194,13 +194,8 @@ import { createModelSwitchBreadcrumbs } from 'src/utils/messages.js';
 import { collectContextData } from 'src/commands/context/context-noninteractive.js';
 import { LOCAL_COMMAND_STDOUT_TAG } from 'src/constants/xml.js';
 import { statusListeners, type ClaudeAILimits } from 'src/services/claudeAiLimits.js';
-import {
-  getDefaultMainLoopModel,
-  getMainLoopModel,
-  modelDisplayString,
-  parseUserSpecifiedModel,
-} from 'src/utils/model/model.js';
-import { getModelOptions } from 'src/utils/model/modelOptions.js';
+import { getDefaultMainLoopModel, getMainLoopModel, parseUserSpecifiedModel } from 'src/utils/model/model.js';
+import { getModelOptions, modelDisplayString } from 'src/utils/model/modelOptions.js';
 import { modelSupportsEffort, modelSupportsMaxEffort, EFFORT_LEVELS, resolveAppliedEffort } from 'src/utils/effort.js';
 import { modelSupportsAdaptiveThinking } from 'src/utils/thinking.js';
 import { modelSupportsAutoMode } from 'src/utils/betas.js';

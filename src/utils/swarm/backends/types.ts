@@ -137,11 +137,12 @@ export type PaneBackend = {
    * Shows a previously hidden pane by joining it back into the main window.
    *
    * @param paneId - The pane to show
-   * @param targetWindowOrPane - The window or pane to join into
+   * @param targetWindowOrPane - The window or pane to join into. Optional: when
+   * omitted the backend resolves its current/main window (tmux leader window).
    * @param useExternalSession - If true, uses external session socket (tmux-specific)
    * @returns true if the pane was shown successfully, false otherwise
    */
-  showPane(paneId: PaneId, targetWindowOrPane: string, useExternalSession?: boolean): Promise<boolean>;
+  showPane(paneId: PaneId, targetWindowOrPane?: string, useExternalSession?: boolean): Promise<boolean>;
 };
 
 /**

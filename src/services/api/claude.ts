@@ -1429,7 +1429,9 @@ async function* queryModel(
         shiningPredictedTools.add('bash');
       }
     }
-  } catch {}
+  } catch {
+    /* best-effort: auxiliary failure must not affect the primary flow */
+  }
   const willDefer = (t: Tool) => {
     if (shiningPredictedTools.has(t.name.toLowerCase())) return false;
     return useToolSearch && (deferredToolNames.has(t.name) || shouldDeferLspTool(t));

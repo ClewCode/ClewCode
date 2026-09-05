@@ -31,12 +31,8 @@ import {
   getAllCachedProviderModels,
   supportsModelFetching,
 } from '../utils/model/fetchProviderModels.js';
-import {
-  getDefaultMainLoopModel,
-  type ModelSetting,
-  modelDisplayString,
-  parseUserSpecifiedModel,
-} from '../utils/model/model.js';
+import { getDefaultMainLoopModel, type ModelSetting, parseUserSpecifiedModel } from '../utils/model/model.js';
+import { modelDisplayString } from '../utils/model/modelOptions.js';
 import {
   fetchOpenRouterCapabilityCatalog,
   findOpenRouterCapabilities,

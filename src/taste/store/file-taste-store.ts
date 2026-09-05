@@ -333,7 +333,9 @@ export class FileTasteStore implements TasteStore {
       writeFileSync(path, stringifyRule(toWrite), 'utf8');
       try {
         unlinkSync(tmp);
-      } catch {}
+      } catch {
+        /* best-effort: auxiliary failure must not affect the primary flow */
+      }
     }
   }
 
@@ -373,7 +375,9 @@ export class FileTasteStore implements TasteStore {
         try {
           unlinkSync(p);
           deleted = true;
-        } catch {}
+        } catch {
+          /* best-effort: auxiliary failure must not affect the primary flow */
+        }
       }
     }
     return deleted;
@@ -383,7 +387,9 @@ export class FileTasteStore implements TasteStore {
       for (const f of listFiles(dir))
         try {
           unlinkSync(join(dir, f));
-        } catch {}
+        } catch {
+          /* best-effort: auxiliary failure must not affect the primary flow */
+        }
     };
     if (!scopeType || scopeType === 'project') {
       clearDir(this.getProjRulesDir());
@@ -409,7 +415,9 @@ export class FileTasteStore implements TasteStore {
       try {
         const e = parseEvidence(readFileSync(join(this.getEvDir(), f), 'utf8'));
         if (e) rows.push(e);
-      } catch {}
+      } catch {
+        /* best-effort: auxiliary failure must not affect the primary flow */
+      }
     }
     rows.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
     return rows.slice(0, limit);
@@ -427,7 +435,9 @@ export class FileTasteStore implements TasteStore {
       try {
         const c = parseConflict(readFileSync(join(this.getCfDir(), f), 'utf8'));
         if (c) rows.push(c);
-      } catch {}
+      } catch {
+        /* best-effort: auxiliary failure must not affect the primary flow */
+      }
     }
     rows.sort((a, b) => b.detectedAt.localeCompare(a.detectedAt));
     return unresolvedOnly ? rows.filter(r => !r.resolved) : rows;
@@ -441,5 +451,7 @@ export class FileTasteStore implements TasteStore {
     writeFileSync(p, stringifyConflict(c), 'utf8');
     return true;
   }
-  close(): void {}
+  close(): void {
+    /* filesystem-backed store has no open resources */
+  }
 }

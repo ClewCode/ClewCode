@@ -1,6 +1,7 @@
 import { getAnthropicApiKey, getAuthTokenSource, getSubscriptionType, isClaudeAISubscriber } from './auth.js';
 import { getGlobalConfig } from './config.js';
 import { isEnvTruthy } from './envUtils.js';
+import { getMockBillingAccessOverride } from './mockBillingOverride.js';
 
 export function hasConsoleBillingAccess(): boolean {
   // Check if cost reporting is disabled via environment variable
@@ -35,15 +36,9 @@ export function hasConsoleBillingAccess(): boolean {
   return ['admin', 'billing'].includes(orgRole) || ['workspace_admin', 'workspace_billing'].includes(workspaceRole);
 }
 
-// Mock billing access for /mock-limits testing (set by mockRateLimits.ts)
-let mockBillingAccessOverride: boolean | null = null;
-
-export function setMockBillingAccessOverride(value: boolean | null): void {
-  mockBillingAccessOverride = value;
-}
-
 export function hasClaudeAiBillingAccess(): boolean {
   // Check for mock billing access first (for /mock-limits testing)
+  const mockBillingAccessOverride = getMockBillingAccessOverride();
   if (mockBillingAccessOverride !== null) {
     return mockBillingAccessOverride;
   }

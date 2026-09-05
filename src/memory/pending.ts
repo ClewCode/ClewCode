@@ -80,7 +80,9 @@ export async function listPending(cwd: string): Promise<PendingSuggestion[]> {
         why: 'Suggested dynamically from agent observation.',
         createdAt: parsed.metadata.created || new Date().toISOString(),
       });
-    } catch {}
+    } catch {
+      // Ignore malformed pending suggestions and continue scanning valid entries.
+    }
   }
   return suggestions;
 }

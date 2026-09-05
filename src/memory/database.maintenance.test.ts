@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
-import { mkdirSync, rmSync } from 'node:fs';
+import { appendFileSync, mkdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { MemoryDB } from './database.js';
@@ -19,7 +19,9 @@ describe('MemoryDB dedup and prune', () => {
     MemoryDB.reset();
     try {
       rmSync(tempDir, { recursive: true, force: true });
-    } catch {}
+    } catch {
+      // Best-effort cleanup of the temporary test directory.
+    }
   });
 
   it('saveMemory reinforces instead of duplicating identical content', () => {
@@ -68,5 +70,15 @@ describe('MemoryDB dedup and prune', () => {
     db.getMemory(id);
     expect(db.pruneMemories({ maxAgeDays: 60 })).toBe(0);
     expect(db.getMemory(id)).not.toBeNull();
+  });
+
+  it('preserves valid timeline records when the JSONL tail is truncated', () => {
+    const id = db.saveMemory({ projectPath: '/p', type: 'note', content: 'timeline survives corruption' });
+    const timelinePath = join(tempDir, '.clew', 'memory', 'timeline.jsonl');
+    appendFileSync(timelinePath, '{"id":"truncated"', 'utf8');
+
+    const timeline = db.getTimeline(id);
+    expect(timeline.length).toBeGreaterThan(0);
+    expect(timeline.some(event => event.event === 'created')).toBe(true);
   });
 });

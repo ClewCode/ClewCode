@@ -118,6 +118,8 @@ export type ApprovalRequest = {
   risk: 'low' | 'medium' | 'high' | 'critical';
   tool: string;
   command?: string;
+  /** Full original tool input — resumed on approval (command alone is lossy). */
+  input?: unknown;
   reason: string;
   createdAt: string;
 };
@@ -133,6 +135,14 @@ export type AgentState = {
   changedFiles: string[];
   openApprovals: ApprovalRequest[];
   lastCheckpoint?: string;
+  /** Cumulative tool executions (budget: maxToolCalls). */
+  toolCalls: number;
+  /** Cumulative LLM nextAction calls (budget: maxLlmCalls). */
+  llmCalls: number;
+  /** ISO timestamp of run start — wall-clock anchor for timeoutMs. */
+  startedAt: string;
+  /** Per-agent step counts (budget: agent max_steps). */
+  agentSteps: Record<string, number>;
 };
 
 type RetrievedMemory = {

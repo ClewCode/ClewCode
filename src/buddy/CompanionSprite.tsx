@@ -274,7 +274,7 @@ export function CompanionFloatingBubble(): React.ReactNode {
     return () => clearInterval(timer);
   }, [reaction]);
 
-  if (!true || !reaction) return null;
+  if (!reaction) return null;
   const companion = getCompanion();
   if (!companion || getGlobalConfig().companionMuted || companion.visible === false) return null;
 

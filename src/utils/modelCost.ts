@@ -28,6 +28,7 @@ import {
   getDefaultMainLoopModelSetting,
   type ModelShortName,
 } from './model/model.js';
+import { getAPIProvider } from './model/providers.js';
 
 // @see https://platform.claude.com/docs/en/about-claude/pricing
 export type ModelCosts = ModelCostRates;
@@ -1846,6 +1847,17 @@ function formatPrice(price: number): string {
  */
 export function formatModelPricing(costs: ModelCosts): string {
   return `${formatPrice(costs.inputTokens)}/${formatPrice(costs.outputTokens)} per Mtok`;
+}
+
+/**
+ * Pricing suffix for Opus 4.7 model options. Lives here (not model.ts) so the
+ * model.ts ↔ modelCost.ts import cycle stays broken: model.ts no longer
+ * imports modelCost.ts back.
+ */
+export function getOpus46PricingSuffix(_fastMode?: boolean): string {
+  if (getAPIProvider() !== 'firstParty') return '';
+  const pricing = formatModelPricing(getOpus46CostTier());
+  return ` · ${pricing}`;
 }
 
 /**

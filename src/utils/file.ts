@@ -81,23 +81,6 @@ export function writeTextContent(
   writeFileSyncAndFlush_DEPRECATED(filePath, toWrite, { encoding });
 }
 
-export function detectFileEncoding(filePath: string): BufferEncoding {
-  try {
-    const fs = getFsImplementation();
-    const { resolvedPath } = safeResolvePath(fs, filePath);
-    return detectEncodingForResolvedPath(resolvedPath);
-  } catch (error) {
-    if (isFsInaccessible(error)) {
-      logForDebugging(`detectFileEncoding failed for expected reason: ${error.code}`, {
-        level: 'debug',
-      });
-    } else {
-      logError(error);
-    }
-    return 'utf8';
-  }
-}
-
 export function detectLineEndings(filePath: string, encoding: BufferEncoding = 'utf8'): LineEndingType {
   try {
     const fs = getFsImplementation();

@@ -1,7 +1,6 @@
 import type { Base64ImageSource } from '@anthropic-ai/sdk/resources/index.mjs';
 import { readdir, readFile as readFileAsync } from 'fs/promises';
 import * as path from 'path';
-import { posix, win32 } from 'path';
 import { BASH_TOOL_NAME } from 'src/tools/BashTool/toolName.js';
 import { z } from 'zod/v4';
 import {
@@ -27,7 +26,7 @@ import {
 import type { ToolUseContext } from '../../Tool.js';
 import { buildTool, type ToolDef } from '../../Tool.js';
 import { getCwd } from '../../utils/cwd.js';
-import { getClewConfigHomeDir, isEnvTruthy } from '../../utils/envUtils.js';
+import { isEnvTruthy } from '../../utils/envUtils.js';
 import { getErrnoCode, isENOENT } from '../../utils/errors.js';
 import {
   addLineNumbers,
@@ -49,7 +48,7 @@ import {
 } from '../../utils/imageResizer.js';
 import { lazySchema } from '../../utils/lazySchema.js';
 import { logError } from '../../utils/log.js';
-import { isAutoMemFile } from '../../utils/memoryFileDetection.js';
+import { detectSessionFileType, isAutoMemFile } from '../../utils/memoryFileDetection.js';
 import { createUserMessage } from '../../utils/messages.js';
 import { getCanonicalName, getMainLoopModel } from '../../utils/model/model.js';
 import { mapNotebookCellsToToolResult, readNotebook } from '../../utils/notebook.js';
@@ -167,35 +166,6 @@ export class MaxFileReadTokenExceededError extends Error {
 
 // Common image extensions
 const IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp']);
-
-/**
- * Detects if a file path is a session-related file for analytics logging.
- * Only matches files within the Claude config directory (e.g., ~/.claude).
- * Returns the type of session file or null if not a session file.
- */
-function detectSessionFileType(filePath: string): 'session_memory' | 'session_transcript' | null {
-  const configDir = getClewConfigHomeDir();
-
-  // Only match files within the Claude config directory
-  if (!filePath.startsWith(configDir)) {
-    return null;
-  }
-
-  // Normalize path to use forward slashes for consistent matching across platforms
-  const normalizedPath = filePath.split(win32.sep).join(posix.sep);
-
-  // Session memory files: ~/.clew/session-memory/*.md (including summary.md)
-  if (normalizedPath.includes('/session-memory/') && normalizedPath.endsWith('.md')) {
-    return 'session_memory';
-  }
-
-  // Session JSONL transcript files: ~/.clew/projects/*/*.jsonl
-  if (normalizedPath.includes('/projects/') && normalizedPath.endsWith('.jsonl')) {
-    return 'session_transcript';
-  }
-
-  return null;
-}
 
 const singleFileSchema = z.strictObject({
   file_path: z.string().describe('The absolute path to the file to read'),

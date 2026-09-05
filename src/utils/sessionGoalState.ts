@@ -5,6 +5,7 @@ import type { PermissionMode } from '../types/permissions.js';
 import { getCwd } from './cwd.js';
 import { getClewConfigHomeDir } from './envUtils.js';
 import { pathExists } from './file.js';
+import { logError } from './log.js';
 
 /**
  * Persistent session goal state.
@@ -151,9 +152,9 @@ export function setSessionGoal(goal: string | null): void {
   if (goal === null) {
     currentGoalState = null;
   }
-  persistGoal(currentGoalState).catch(() => {
-    /* noop */
-  });
+  // persistGoal logs + records failures itself; the catch here only guards
+  // against unexpected rejections escaping into sync callers.
+  persistGoal(currentGoalState).catch(logGoalPersistError('setSessionGoal'));
 }
 
 /** Set the full goal state with all metadata */
@@ -169,18 +170,14 @@ export function setFullGoalState(state: GoalState | null): void {
   currentGoal = state?.goal ?? null;
   currentGoalState = state;
   restoredSessionId = sessionId;
-  persistGoal(state).catch(() => {
-    /* noop */
-  });
+  persistGoal(state).catch(logGoalPersistError('setFullGoalState'));
 }
 
 /** Update specific fields in the goal state */
 export function updateGoalState(updates: Partial<GoalState>): void {
   if (!currentGoalState) return;
   currentGoalState = { ...currentGoalState, ...updates };
-  persistGoal(currentGoalState).catch(() => {
-    /* noop */
-  });
+  persistGoal(currentGoalState).catch(logGoalPersistError('updateGoalState'));
 }
 
 export function blockGoal(reason: string): void {
@@ -192,9 +189,7 @@ export function blockGoal(reason: string): void {
     blockedReason: reason,
     lastReason: reason,
   };
-  persistGoal(currentGoalState).catch(() => {
-    /* noop */
-  });
+  persistGoal(currentGoalState).catch(logGoalPersistError('blockGoal'));
 }
 
 export function isGoalBlocked(): boolean {
@@ -215,9 +210,22 @@ export function linkWorkflowToActiveGoal(runId: string): void {
     ...currentGoalState,
     linkedWorkflowRunIds: [...linked, runId],
   };
-  persistGoal(currentGoalState).catch(() => {
-    /* noop */
-  });
+  persistGoal(currentGoalState).catch(logGoalPersistError('linkWorkflowToActiveGoal'));
+}
+
+/** Last goal persistence failure message, or null when the on-disk state is in sync. */
+let goalPersistError: string | null = null;
+
+export function getGoalPersistenceError(): string | null {
+  return goalPersistError;
+}
+
+/** Builds a rejection handler that records + logs goal persistence failures. */
+function logGoalPersistError(caller: string): (error: unknown) => void {
+  return error => {
+    goalPersistError = error instanceof Error ? error.message : String(error);
+    logError(new Error(`[${caller}] goal persist failed: ${goalPersistError}`));
+  };
 }
 
 async function persistGoal(state: GoalState | null): Promise<void> {
@@ -233,7 +241,10 @@ async function persistGoal(state: GoalState | null): Promise<void> {
       await mkdir(join(filePath, '..'), { recursive: true });
       await writeFile(filePath, JSON.stringify(state), 'utf-8');
     }
-  } catch {
-    // Persistence failures are non-fatal — goal still works in-memory
+    goalPersistError = null;
+  } catch (error) {
+    // Persistence failures are non-fatal — goal still works in-memory —
+    // but record them so a restart doesn't silently resurrect stale state.
+    logGoalPersistError('persistGoal')(error);
   }
 }

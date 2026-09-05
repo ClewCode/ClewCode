@@ -56,7 +56,7 @@ import { cloneFileStateCache, type FileStateCache } from './utils/fileStateCache
 import { getGoalPrompt } from './utils/goalPrompt.js';
 import { headlessProfilerCheckpoint } from './utils/headlessProfiler.js';
 import { registerStructuredOutputEnforcement } from './utils/hooks/hookHelpers.js';
-import { getInMemoryErrors } from './utils/log.js';
+import { getInMemoryErrors, logError } from './utils/log.js';
 import { localCommandOutputToSDKAssistantMessage, toSDKCompactMetadata } from './utils/messages/mappers.js';
 import { buildSystemInitMessage, sdkCompatToolName } from './utils/messages/systemInit.js';
 import { countToolCalls, SYNTHETIC_MESSAGES } from './utils/messages.js';
@@ -823,13 +823,20 @@ export class QueryEngine {
                 cycle,
                 notes,
               };
-              writeCheckpoint(checkpoint).catch(() => {
-                /* noop */
+              // Fail-open by design (a failed checkpoint must not break the query
+              // loop), but log so a missing checkpoint is diagnosable instead of
+              // silently assumed to exist.
+              writeCheckpoint(checkpoint).catch(error => {
+                logError(
+                  `[QueryEngine] checkpoint@${threshold}% persist failed: ${error instanceof Error ? error.message : String(error)}`,
+                );
               });
               // Promote to MEMORY.md at 70% checkpoint (project memory layer)
               if (threshold === 70) {
-                promoteCheckpoints(goalState.goal).catch(() => {
-                  /* noop */
+                promoteCheckpoints(goalState.goal).catch(error => {
+                  logError(
+                    `[QueryEngine] checkpoint promote failed: ${error instanceof Error ? error.message : String(error)}`,
+                  );
                 });
               }
               break; // Only write one checkpoint per turn
@@ -1323,9 +1330,13 @@ export async function* ask({
       const { observe } = await import('./shining/observer.js');
       observe({ type: 'user_intent', text: promptText });
       const { predict } = await import('./shining/predictor.js');
-      void predict({ userIntent: promptText }).catch(() => {});
+      void predict({ userIntent: promptText }).catch(() => {
+        /* best-effort hook */
+      });
     }
-  } catch {}
+  } catch {
+    /* best-effort: auxiliary failure must not affect the primary flow */
+  }
 
   try {
     yield* engine.submitMessage(prompt, {

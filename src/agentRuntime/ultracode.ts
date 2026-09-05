@@ -80,11 +80,9 @@ export function formatConfirmationPrompt(
 
 /**
  * The auto-trigger decision used by the host. Returns true if a dynamic
- * workflow should be planned for this prompt. Three conditions:
- *   1. Ultracode must be enabled.
- *   2. The prompt must look hard enough to warrant a workflow.
- *   3. The caller hasn't already manually requested a workflow for this
- *      prompt (the host passes `explicitlyRequested`).
+ * workflow should be planned for this prompt. An explicit `/ultracode run`
+ * request always wins. Otherwise ultracode must be enabled and the prompt
+ * must look hard enough to warrant a workflow.
  */
 export function shouldAutoTriggerWorkflow(params: {
   state: UltracodeState;

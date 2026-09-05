@@ -18,7 +18,6 @@ import { fileURLToPath } from 'url';
 import { getSessionId } from '../bootstrap/state.js';
 import { ModalContext } from '../context/modalContext.js';
 import { PromptOverlayProvider, usePromptOverlay, usePromptOverlayDialog } from '../context/promptOverlayContext.js';
-import { useMainLoopModel } from '../hooks/useMainLoopModel.js';
 import { useTerminalSize } from '../hooks/useTerminalSize.js';
 import ScrollBox, { type ScrollBoxHandle } from '../ink/components/ScrollBox.js';
 import instances from '../ink/instances.js';
@@ -572,18 +571,9 @@ function IdeShellLayout({
   const [sessionsVisible, setSessionsVisible] = useState(true);
   const [filesVisible, setFilesVisible] = useState(true);
   const [filesMode, setFilesMode] = useState<'files' | 'changes'>('files');
-  const [sessionsSearchVisible, setSessionsSearchVisible] = useState(false);
   const [filesSearchVisible, setFilesSearchVisible] = useState(false);
-  const [sessionsFilter, setSessionsFilter] = useState('');
   const [filesFilter, setFilesFilter] = useState('');
   const [fileTreeKey, setFileTreeKey] = useState(0);
-  const _activeProvider = useAppState(s => s.mainLoopProviderForSession ?? s.mainLoopProvider);
-  const _mainLoopModel = useMainLoopModel();
-  const _toolPermissionContext = useAppState(s => s.toolPermissionContext);
-
-  const _handleSessionsSettings = useCallback(() => {
-    setSessionsSearchVisible(true);
-  }, []);
 
   const handleRefreshFiles = useCallback(() => {
     setFileTreeKey(k => k + 1);
@@ -620,18 +610,7 @@ function IdeShellLayout({
         }}
       />
       {/* Sessions sidebar */}
-      {sessionsVisible && (
-        <IdeSessionSidebar
-          width={IDE_LEFT_WIDTH}
-          searchVisible={sessionsSearchVisible}
-          onToggleSearch={() => setSessionsSearchVisible(v => !v)}
-          filter={sessionsFilter}
-          onFilterChange={setSessionsFilter}
-          onRefresh={() => {
-            /* noop */
-          }}
-        />
-      )}
+      {sessionsVisible && <IdeSessionSidebar width={IDE_LEFT_WIDTH} />}
       {/* Center — chat transcript */}
       <Box flexGrow={1} flexDirection="column" borderStyle="single" borderColor="subtle" overflow="hidden">
         {children}
@@ -730,27 +709,16 @@ function IdeActivityBar({
 
 // ─── Session Sidebar (left) ──────────────────────────────────────────────
 
-function IdeSessionSidebar({
-  width,
-  searchVisible,
-  onToggleSearch,
-  filter,
-  onFilterChange,
-}: {
-  width: number;
-  searchVisible: boolean;
-  onToggleSearch: () => void;
-  filter: string;
-  onFilterChange: (v: string) => void;
-  onRefresh: () => void;
-}): React.ReactNode {
+function IdeSessionSidebar({ width }: { width: number }): React.ReactNode {
   const projectRoot = getProjectRoot();
   const projectName = basename(projectRoot);
   const sessionId = getSessionId();
   const shortSession = sessionId ? sessionId.slice(0, 8) : 'local';
   const rowWidth = width - 4;
-  const _setAppState = useSetAppState();
   const actions = useContext(IdeActionContext);
+  const agentCount = useAppState(s => s.agentDefinitions.activeAgents.length);
+  const mcpServerCount = useAppState(s => s.mcp.clients.length);
+  const pluginCount = useAppState(s => s.plugins.enabled.length);
 
   return (
     <Box flexDirection="column" width={width} borderStyle="single" borderColor="subtle" paddingX={1} overflow="hidden">
@@ -762,11 +730,6 @@ function IdeSessionSidebar({
           <Text color="secondaryText" onClick={actions.openSettings}>
             {figures.ellipsis}
           </Text>
-          {/* @ts-ignore - Phase3 typecheck auto (TS error suppression) */}
-          <Text color="secondaryText" onClick={onToggleSearch} inverse={searchVisible} key="session-search">
-            @
-          </Text>
-          <Text color="secondaryText">New</Text>
         </Box>
       </Box>
       <Box marginTop={1} flexDirection="column">
@@ -794,10 +757,9 @@ function IdeSessionSidebar({
         paddingTop={1}
       >
         <Text color="secondaryText">Customizations</Text>
-        <SidebarCount label="Agents" count="27" />
-        <SidebarCount label="Skills" count="90" />
-        <SidebarCount label="MCP Servers" count="2" />
-        <SidebarCount label="Plugins" count="-" />
+        <SidebarCount label="Agents" count={String(agentCount)} />
+        <SidebarCount label="MCP Servers" count={String(mcpServerCount)} />
+        <SidebarCount label="Plugins" count={String(pluginCount)} />
       </Box>
     </Box>
   );

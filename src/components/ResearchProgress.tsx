@@ -34,39 +34,11 @@ export type ResearchProgressState = {
   error?: string;
 };
 
-export function useResearchProgress(state: ResearchProgressState) {
-  const percentage = Math.min(100, Math.round((state.phaseIndex / state.totalPhases) * 100));
-  const activeCollector = state.collectors.find(c => c.status === 'running')?.name;
+function useResearchProgress(state: ResearchProgressState) {
   return {
-    percentage,
-    activeCollector,
+    percentage: Math.min(100, Math.round((state.phaseIndex / state.totalPhases) * 100)),
     formattedDuration: formatDuration(state.elapsedMs),
   };
-}
-
-export function ResearchStatusLine({ state }: { state: ResearchProgressState }): React.ReactNode {
-  const termWidth = useTerminalSize().columns;
-  const { percentage, activeCollector, formattedDuration } = useResearchProgress(state);
-
-  const statusGlyph = state.phase === 'completed' ? '✓' : state.phase === 'failed' ? '✗' : '◈';
-
-  const detailStr =
-    state.phase === 'collecting'
-      ? `collecting ${state.sourceCount} sources${activeCollector ? ` via ${activeCollector}` : ''}`
-      : state.phase === 'extracting'
-        ? `extracting ${state.claimCount} claims`
-        : state.phase;
-
-  const line = `${statusGlyph} research [${detailStr}] ${percentage}% ${formattedDuration}`;
-  const maxWidth = termWidth - 4;
-
-  return (
-    <Box paddingX={1}>
-      <Text bold color={state.phase === 'failed' ? 'red' : 'cyan'}>
-        {line.length > maxWidth ? `${line.slice(0, maxWidth)}…` : line}
-      </Text>
-    </Box>
-  );
 }
 
 export function ResearchProgressPanel({ state }: { state: ResearchProgressState }): React.ReactNode {

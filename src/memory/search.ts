@@ -28,7 +28,9 @@ function scanMemoryFiles(cwd: string): Array<{ path: string; content: string; mt
           const content = readFileSync(p, 'utf8');
           // Use stat mtime via read timing approx; real mtime not critical for ranking
           out.push({ path: p, content, mtimeMs: Date.now() });
-        } catch {}
+        } catch {
+          // A single unreadable memory file must not abort the search.
+        }
       }
     }
   }

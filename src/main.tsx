@@ -1013,7 +1013,6 @@ export async function main() {
     const ccIdx = rawCliArgs.findIndex(a => a.startsWith('cc://') || a.startsWith('cc+unix://'));
     if (ccIdx !== -1 && _pendingConnect) {
       const ccUrl = rawCliArgs[ccIdx]!;
-      // @ts-expect-error - Phase2: missing module stub (auto)
       const { parseConnectUrl } = await import('./server/parseConnectUrl.js');
       const parsed = parseConnectUrl(ccUrl);
       _pendingConnect.dangerouslySkipPermissions = rawCliArgs.includes('--dangerously-skip-permissions');
@@ -5248,7 +5247,6 @@ async function run(): Promise<CommanderCommand> {
             outputFormat: string;
           },
         ) => {
-          // @ts-expect-error - Phase2: missing module stub (auto)
           const { parseConnectUrl } = await import('./server/parseConnectUrl.js');
           const { serverUrl, authToken } = parseConnectUrl(ccUrl);
           let connectConfig;

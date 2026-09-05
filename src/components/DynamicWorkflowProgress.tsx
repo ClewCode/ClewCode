@@ -15,24 +15,18 @@ import { useEffect, useState } from 'react';
 import { listDynamicRuns, loadDynamicRun } from '../agentRuntime/dynamicWorkflowPersistence.js';
 import { useTerminalSize } from '../hooks/useTerminalSize.js';
 import { Box, Text } from '../ink.js';
-import { formatDuration } from '../utils/format.js';
 
 type SubTaskInfo = {
-  id: string;
   role: string;
-  title: string;
-  status: 'running' | 'completed' | 'failed' | 'pending';
+  status: 'running' | 'completed' | 'pending';
 };
 
 type RunSummary = {
-  id: string;
   status: string;
   totalSubtasks: number;
   completed: number;
   refuted: number;
   confirmed: number;
-  rationale: string;
-  startedAt: string;
   subtasks: SubTaskInfo[];
 };
 
@@ -63,21 +57,16 @@ function useLiveDynamicRuns(workspaceRoot: string): RunSummary[] {
           const completedSet = new Set(state.completedSubtaskIds);
           const runningSet = new Set(state.runningSubtaskIds ?? []);
           const subtasks: SubTaskInfo[] = loaded.workflow.subtasks.map(s => ({
-            id: s.id,
             role: s.role,
-            title: s.title,
             status: completedSet.has(s.id) ? 'completed' : runningSet.has(s.id) ? 'running' : 'pending',
           }));
 
           summaries.push({
-            id: loaded.workflow.id,
             status: state.status,
             totalSubtasks: loaded.workflow.subtasks.length,
             completed: state.completedSubtaskIds.length,
             refuted,
             confirmed,
-            rationale: loaded.workflow.rationale,
-            startedAt: state.startedAt,
             subtasks,
           });
         }
@@ -157,83 +146,6 @@ export function DynamicWorkflowStatusLine({
       <Text bold dimColor>
         {line.length > maxWidth ? `${line.slice(0, maxWidth)}…` : line}
       </Text>
-    </Box>
-  );
-}
-
-/**
- * Detailed panel view — shows every running/paused dynamic run with
- * per-subtask progress.
- */
-export function DynamicWorkflowPanel({ workspaceRoot }: { workspaceRoot: string }): React.ReactNode {
-  const runs = useLiveDynamicRuns(workspaceRoot);
-
-  if (runs.length === 0) {
-    return (
-      <Box paddingX={1}>
-        <Text dimColor>No active dynamic workflow runs.</Text>
-      </Box>
-    );
-  }
-
-  return (
-    <Box flexDirection="column">
-      {runs.map(run => (
-        <RunRow key={run.id} run={run} />
-      ))}
-    </Box>
-  );
-}
-
-function RunRow({ run }: { run: RunSummary }): React.ReactNode {
-  const duration = run.startedAt ? formatDuration(Date.now() - new Date(run.startedAt).getTime()) : '';
-
-  const statusLines = run.subtasks.map(s => {
-    const glyph = s.status === 'running' ? '⟐' : s.status === 'completed' ? '✓' : s.status === 'failed' ? '✗' : '·';
-    const color =
-      s.status === 'running'
-        ? 'suggestion'
-        : s.status === 'completed'
-          ? 'success'
-          : s.status === 'failed'
-            ? 'error'
-            : 'subtle';
-    return (
-      <Box key={s.id} paddingLeft={2}>
-        <Text color={color}>{glyph}</Text>
-        <Text> </Text>
-        <Text color={color} bold={s.status === 'running'}>
-          {s.role}
-        </Text>
-        <Text dimColor>: {s.title.length > 60 ? `${s.title.slice(0, 60)}…` : s.title}</Text>
-      </Box>
-    );
-  });
-
-  return (
-    <Box flexDirection="column" paddingX={1} paddingY={0}>
-      <Box>
-        <Text>{run.status === 'running' ? figures.play : figures.square}</Text>
-        <Text> </Text>
-        <Text bold>ultracode</Text>
-        <Text> </Text>
-        <Text dimColor>{run.id}</Text>
-      </Box>
-      {statusLines}
-      <Box paddingLeft={2}>
-        <Text dimColor>
-          {run.completed}/{run.totalSubtasks} subtasks
-          {run.refuted > 0 ? ` · ${run.refuted} refuted` : ''}
-          {run.confirmed > 0 ? ` · ${run.confirmed} confirmed` : ''}
-          {' · '}
-          {duration}
-        </Text>
-      </Box>
-      {run.rationale ? (
-        <Box paddingLeft={2}>
-          <Text dimColor>{run.rationale.length > 80 ? `${run.rationale.slice(0, 80)}…` : run.rationale}</Text>
-        </Box>
-      ) : null}
     </Box>
   );
 }

@@ -74,7 +74,6 @@ import reloadPlugins from './commands/reload-plugins/index.js';
 import rewind from './commands/rewind/index.js';
 import recap from './commands/recap/index.js';
 import heapDump from './commands/heapdump/index.js';
-import remoteCmd from './commands/remote/index.js';
 import guardianCmd from './commands/guardian/index.js';
 import approveCmd from './commands/approve/index.js';
 import prCmd from './commands/pr/index.js';
@@ -88,6 +87,7 @@ import { repomap } from './commands/repomap/index.js';
 import { codeSearch } from './commands/codeSearch/index.js';
 import bg from './commands/bg/index.js';
 import daemonCmd from './commands/daemon/index.js';
+import loop from './commands/loop/index.js';
 import dashboard from './commands/dashboard/index.js';
 import taskCmd from './commands/task/index.js';
 import scrollSpeed from './commands/scroll-speed/index.js';
@@ -183,6 +183,7 @@ const COMMANDS = memoize((): Command[] => [
   contextNonInteractive,
   cost,
   daemonCmd,
+  loop,
   dashboard,
   diff,
   doctor,
@@ -258,7 +259,6 @@ const COMMANDS = memoize((): Command[] => [
   permissions,
   plan,
   research,
-  remoteCmd,
   guardianCmd,
   approveCmd,
   prCmd,
@@ -362,6 +362,24 @@ const loadAllCommands = memoize(async (cwd: string): Promise<Command[]> => {
   const [{ skillDirCommands, pluginSkills, bundledSkills, builtinPluginSkills }, pluginCommands, workflowCommands] =
     await Promise.all([getSkills(cwd), getPluginCommands(), Promise.resolve([])]);
   const builtinCommands = COMMANDS();
+  // NB: intentional interactive/non-interactive pairs (e.g. `context` +
+  // `contextNonInteractive`, `usageCredits` + `usageCreditsNonInteractive`)
+  // share a slash-command name with mutually exclusive `isEnabled()` gates.
+  // They differ by `type` ('local-jsx' interactive vs 'local' non-interactive),
+  // so only same-type duplicates are real collisions. (We can't evaluate
+  // `isEnabled()` here — config may not be loaded yet at first call.)
+  const duplicateBuiltinNames = [
+    ...new Set(
+      builtinCommands
+        .map(command => `${command.type}:${command.name}`)
+        .filter((key, index, keys) => keys.indexOf(key) !== index),
+    ),
+  ];
+  if (duplicateBuiltinNames.length > 0) {
+    throw new Error(
+      `Duplicate built-in command names: ${duplicateBuiltinNames.map(key => key.split(':')[1]).join(', ')}`,
+    );
+  }
   const priorityBuiltinCommands = builtinCommands.filter(cmd => cmd.name === 'code-review');
   const remainingBuiltinCommands = builtinCommands.filter(cmd => cmd.name !== 'code-review');
 

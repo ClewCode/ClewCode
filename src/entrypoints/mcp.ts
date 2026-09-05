@@ -47,7 +47,8 @@ export async function startMCPServer(cwd: string, debug: boolean, verbose: boole
   );
 
   server.setRequestHandler(ListToolsRequestSchema, async (): Promise<ListToolsResult> => {
-    // TODO: Also re-expose any MCP tools
+    // NB: only built-in tools are exposed here by design — connected MCP
+    // servers' tools are intentionally NOT re-exposed (no proxying).
     const toolPermissionContext = getEmptyToolPermissionContext();
     const tools = getTools(toolPermissionContext);
     return {
@@ -87,7 +88,7 @@ export async function startMCPServer(cwd: string, debug: boolean, verbose: boole
     CallToolRequestSchema,
     async ({ params: { name, arguments: args } }): Promise<CallToolResult> => {
       const toolPermissionContext = getEmptyToolPermissionContext();
-      // TODO: Also re-expose any MCP tools
+      // NB: see above — MCP tools are intentionally not proxied.
       const tools = getTools(toolPermissionContext);
       const tool = findToolByName(tools, name);
       if (!tool) {

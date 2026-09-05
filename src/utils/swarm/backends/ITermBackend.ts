@@ -312,7 +312,7 @@ export class ITermBackend implements PaneBackend {
    *
    * @returns false — use createTeammatePaneInSwarmView to create a new pane instead.
    */
-  async showPane(_paneId: PaneId, _targetWindowOrPane: string, _useExternalSession?: boolean): Promise<boolean> {
+  async showPane(_paneId: PaneId, _targetWindowOrPane?: string, _useExternalSession?: boolean): Promise<boolean> {
     logForDebugging('[ITermBackend] showPane not supported in iTerm2 — create a new pane instead');
     return false;
   }

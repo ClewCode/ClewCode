@@ -3,7 +3,19 @@ import type { WriteFileOptions } from 'fs';
 import { closeSync, writeFileSync as fsWriteFileSync, fsyncSync, openSync } from 'fs';
 import lodashCloneDeep from 'lodash-es/cloneDeep.js';
 import { addSlowOperation } from '../bootstrap/state.js';
-import { logForDebugging } from './debug.js';
+
+/**
+ * Sink for `[SLOW OPERATION DETECTED]` warnings. Defaults to unset (warnings
+ * off) until a host registers one — debug.ts wires it to logForDebugging.
+ * A setter (not a direct debug.ts import) keeps slowOperations → debug out
+ * of the module graph: debug → slowOperations is one-directional.
+ */
+type SlowOperationReporter = (message: string) => void;
+let slowOperationReporter: SlowOperationReporter | null = null;
+
+export function setSlowOperationReporter(reporter: SlowOperationReporter | null): void {
+  slowOperationReporter = reporter;
+}
 
 // Extended WriteFileOptions to include 'flush' which is available in Node.js 20.1.0+
 // but not yet in @types/node
@@ -104,7 +116,7 @@ class AntSlowLogger {
       isLogging = true;
       try {
         const description = buildDescription(this.args) + callerFrame(this.err.stack);
-        logForDebugging(`[SLOW OPERATION DETECTED] ${description} (${duration.toFixed(1)}ms)`);
+        slowOperationReporter?.(`[SLOW OPERATION DETECTED] ${description} (${duration.toFixed(1)}ms)`);
         addSlowOperation(description, duration);
       } finally {
         isLogging = false;

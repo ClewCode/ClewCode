@@ -5,6 +5,61 @@ import { DOT_CLEW } from '../utils/clewPaths.js';
 import type { RunStore } from './runStore.js';
 import type { AgentDefinition } from './types.js';
 
+/**
+ * Substrings indicating a shell command touches the network. Used to enforce
+ * the agent `network` permission — without this, `network: 'deny'` is
+ * declarative-only because every agent with `shell: 'allow'` could simply
+ * `curl`/`git fetch`/… its way out.
+ */
+/** Destructive shell patterns — used for `shell.destructive` approval gating. */
+const DESTRUCTIVE_COMMAND_PATTERNS = [
+  /\brm\s+(-[^\s]*r[^\s]*f|-[^\s]*f[^\s]*r)\b/i, // rm -rf / rm -fr (any flag combo)
+  /\bgit\s+reset\s+--hard\b/i,
+  /\bgit\s+clean\s+-[^\s]*f[^\s]*d/i,
+  /\bgit\s+clean\s+-[^\s]*d[^\s]*f/i,
+  /\bgit\s+checkout\s+--\s+\./i,
+  /\bmkfs\b/i,
+  /\bdd\s+.*\bof=/i,
+  /:\(\)\s*\{\s*:\|:\s*&\s*\};:/, // fork bomb
+  /\bchmod\s+-R\s+.*\s+\/(\s|$)/,
+  /\bchown\s+-R\s+.*\s+\/(\s|$)/,
+];
+
+/** True when a shell command touches the network (workflow `shell.network` gating). */
+export function isNetworkCommand(command: string): boolean {
+  return NETWORK_COMMAND_PATTERNS.some(pattern => pattern.test(command));
+}
+
+/** True when a shell command is destructive (workflow `shell.destructive` gating). */
+export function isDestructiveCommand(command: string): boolean {
+  return DESTRUCTIVE_COMMAND_PATTERNS.some(pattern => pattern.test(command));
+}
+
+const NETWORK_COMMAND_PATTERNS = [
+  /\bcurl\b/i,
+  /\bwget\b/i,
+  /\bssh\b/i,
+  /\bscp\b/i,
+  /\bsftp\b/i,
+  /\bftp\b/i,
+  /\bgit\s+(fetch|pull|push|clone|ls-remote)\b/i,
+  /\bnpm\s+(install|ci|publish|fetch)\b/i,
+  /\bpnpm\s+(install|publish|fetch)\b/i,
+  /\bbun\s+(install|publish)\b/i,
+  /\byarn\s+(install|publish)\b/i,
+  /\bpip\s+(install|download)\b/i,
+  /\bapt(-get)?\b/i,
+  /\b(yum|dnf)\b/i,
+  /\bapk\s+add\b/i,
+  /\bnc\b/i,
+  /\bnetcat\b/i,
+  /\btelnet\b/i,
+  /\bping\b/i,
+  /\bnslookup\b/i,
+  /\bdig\b/i,
+  /Invoke-WebRequest/i,
+];
+
 const SENSITIVE_COMMAND_SUBSTRINGS = [
   'rm ',
   'sudo ',
@@ -24,6 +79,52 @@ type ToolDecision =
   | { action: 'allow' }
   | { action: 'deny'; reason: string }
   | { action: 'ask_user'; approvalId: string; reason: string; risk: 'low' | 'medium' | 'high' | 'critical' };
+
+/**
+ * Resolve a workspace-relative path and confine it inside the workspace.
+ *
+ * A bare `resolved.startsWith(root)` check is insufficient: a sibling like
+ * `<root>-evil/secret.txt` passes the prefix test. Require a full segment
+ * boundary (`root + sep`) instead, then resolve symlinks against the
+ * nearest existing ancestor so symlink escapes are caught too.
+ *
+ * @throws when the path escapes the workspace.
+ */
+export async function resolveWorkspacePath(workspaceRoot: string, filePath: string): Promise<string> {
+  // Windows/macOS resolve the same directory with different casing — compare
+  // case-insensitively there to avoid false escape positives.
+  const fold =
+    process.platform === 'win32' || process.platform === 'darwin' ? (s: string) => s.toLowerCase() : (s: string) => s;
+  const inside = (root: string, candidate: string): boolean => {
+    const r = fold(root);
+    const c = fold(candidate);
+    return c === r || c.startsWith(r + path.sep);
+  };
+  const root = path.resolve(workspaceRoot);
+  const fullPath = path.resolve(root, filePath);
+  if (!inside(root, fullPath)) {
+    throw new Error(`Permission denied: file path ${filePath} is outside workspace root.`);
+  }
+  // Symlink check: realpath the file itself when it exists, otherwise the
+  // nearest existing ancestor (covers repo.patch creating new files).
+  let probe = fullPath;
+  while (true) {
+    try {
+      const real = await fs.realpath(probe);
+      const suffix = path.relative(probe, fullPath);
+      const realFull = suffix ? path.join(real, suffix) : real;
+      if (!inside(root, realFull)) {
+        throw new Error(`Permission denied: file path ${filePath} escapes the workspace via symlink.`);
+      }
+      return fullPath;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException)?.code !== 'ENOENT') throw error;
+      const parent = path.dirname(probe);
+      if (parent === probe) throw error; // reached filesystem root
+      probe = parent;
+    }
+  }
+}
 
 export class ToolGateway {
   private runStore: RunStore;
@@ -77,6 +178,22 @@ export class ToolGateway {
         return { action: 'deny', reason: `Agent '${agent.name}' is denied executing shell commands.` };
       }
 
+      // Enforce the network permission: without this, `network: 'deny'` is
+      // meaningless for any agent with shell access.
+      const isNetwork = isNetworkCommand(command);
+      if (isNetwork && permissions.network === 'deny') {
+        return { action: 'deny', reason: `Agent '${agent.name}' is denied network access: "${command}"` };
+      }
+      if (isNetwork && permissions.network === 'guarded') {
+        const approvalId = `app-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+        return {
+          action: 'ask_user',
+          approvalId,
+          risk: 'high',
+          reason: `Network access under guarded policy: "${command}"`,
+        };
+      }
+
       // Check if command contains highly sensitive operations
       const isSensitive = SENSITIVE_COMMAND_SUBSTRINGS.some(sub => command.includes(sub));
       if (isSensitive) {
@@ -119,6 +236,19 @@ export class ToolGateway {
   async execute(runId: string, agentName: string, toolName: string, input: unknown): Promise<Record<string, unknown>> {
     await this.runStore.appendEvent(runId, 'tool.requested', { input }, agentName, toolName);
 
+    // Byte budgets (best-effort: runs created before budget tracking fall back
+    // to workflow defaults via loadRun — budgets are always present on AgentRun).
+    const run = await this.runStore.loadRun(runId);
+    const { maxOutputBytesPerTool, maxPatchBytes } = run.budget;
+
+    if (toolName === 'repo.patch') {
+      const { patch, replacement } = input as { patch?: string; replacement?: string };
+      const patchBytes = Buffer.byteLength(patch || replacement || '', 'utf-8');
+      if (patchBytes > maxPatchBytes) {
+        throw new Error(`Patch size ${patchBytes} bytes exceeds budget of ${maxPatchBytes} bytes.`);
+      }
+    }
+
     try {
       let output: Record<string, unknown> = {};
 
@@ -146,6 +276,15 @@ export class ToolGateway {
         throw new Error(`Tool execution for '${toolName}' not implemented in Gateway.`);
       }
 
+      // Cap tool output so one chatty tool cannot blow the agent context.
+      const outputJson = JSON.stringify(output);
+      if (outputJson.length > maxOutputBytesPerTool) {
+        output = {
+          truncated: true,
+          originalBytes: outputJson.length,
+          preview: outputJson.slice(0, maxOutputBytesPerTool),
+        };
+      }
       await this.runStore.appendEvent(
         runId,
         'tool.completed',
@@ -209,11 +348,7 @@ export class ToolGateway {
     startLine?: number,
     endLine?: number,
   ): Promise<Record<string, unknown>> {
-    const fullPath = path.resolve(this.workspaceRoot, filePath);
-    // Boundary check
-    if (!fullPath.startsWith(path.resolve(this.workspaceRoot))) {
-      throw new Error(`Permission denied: file path ${filePath} is outside workspace root.`);
-    }
+    const fullPath = await resolveWorkspacePath(this.workspaceRoot, filePath);
 
     const content = await fs.readFile(fullPath, 'utf-8');
     const lines = content.split('\n');
@@ -230,10 +365,7 @@ export class ToolGateway {
   }
 
   private async executeRepoPatch(filePath: string, patch: string, target?: string): Promise<Record<string, unknown>> {
-    const fullPath = path.resolve(this.workspaceRoot, filePath);
-    if (!fullPath.startsWith(path.resolve(this.workspaceRoot))) {
-      throw new Error(`Permission denied: file path ${filePath} is outside workspace root.`);
-    }
+    const fullPath = await resolveWorkspacePath(this.workspaceRoot, filePath);
 
     let content = '';
     try {

@@ -9,6 +9,7 @@
  */
 
 import {
+  appendFileSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -201,7 +202,9 @@ function writeRecordAtomic(filePath: string, content: string): void {
     writeFileSync(filePath, content, 'utf8');
     try {
       unlinkSync(tmp);
-    } catch {}
+    } catch {
+      // The destination write succeeded; stale temp-file cleanup is best-effort.
+    }
   }
   invalidateIndex();
 }
@@ -222,58 +225,61 @@ function computeRelevance(query: string, content: string, key: string, type: str
 
 function appendTimeline(record: TimelineRecord): void {
   ensureStoreDir();
-  const line = JSON.stringify(record) + '\n';
-  const timelinePath = getTimelinePath();
-  try {
-    const prev = existsSync(timelinePath) ? readFileSync(timelinePath, 'utf8') : '';
-    writeFileSync(timelinePath, prev + line, 'utf8');
-  } catch {
-    writeFileSync(timelinePath, line, 'utf8');
-  }
+  appendFileSync(getTimelinePath(), `${JSON.stringify(record)}\n`, 'utf8');
 }
 
 function readTimeline(): TimelineRecord[] {
   const p = getTimelinePath();
   if (!existsSync(p)) return [];
+
+  let raw: string;
   try {
-    const raw = readFileSync(p, 'utf8');
-    const lines = raw.split('\n').filter(Boolean);
-    return lines.map(l => JSON.parse(l) as TimelineRecord);
+    raw = readFileSync(p, 'utf8');
   } catch {
     return [];
   }
+
+  const records: TimelineRecord[] = [];
+  for (const line of raw.split('\n')) {
+    if (!line.trim()) continue;
+    try {
+      records.push(JSON.parse(line) as TimelineRecord);
+    } catch {
+      // JSONL is append-only. A crash can leave a truncated tail record; preserve
+      // every valid record instead of making the entire timeline unreadable.
+    }
+  }
+  return records;
 }
 
 /**
- * MemoryDB — filesystem singleton, API-compatible with old SQLite version.
+ * MemoryDB — filesystem singleton (name is historical; storage is markdown
+ * files under `.clew/memory/store/`, not SQLite — see hierarchy.ts).
+ * Kept API-compatible with the old SQLite version so existing callers
+ * (`MemoryDB.init/getInstance/isInitialized/reset`) keep working.
  */
 export class MemoryDB {
   private static instance: MemoryDB | null = null;
 
-  private constructor(_dbPath: string) {
+  private constructor(_storeDir: string) {
     ensureStoreDir();
   }
 
-  static init(dbPath: string): MemoryDB {
+  static init(storeDir: string): MemoryDB {
     if (MemoryDB.instance) throw new Error('MemoryDB already initialized');
-    if (dbPath === ':memory:') {
+    if (storeDir === ':memory:') {
       const tmp = mkdtempSync(join(tmpdir(), 'clew-mem-'));
       _overrideStoreDir = join(tmp, 'store');
       _overrideTimelinePath = join(tmp, 'timeline.jsonl');
       setCacheOverride(_overrideStoreDir, join(tmp, 'index.json'));
-    } else if (dbPath) {
-      const base = dbPath.endsWith('store') ? dbPath.slice(0, -6) : dbPath;
-      if (base.endsWith('memory')) {
-        _overrideStoreDir = join(base, 'store');
-        _overrideTimelinePath = join(base, 'timeline.jsonl');
-        setCacheOverride(_overrideStoreDir, join(base, 'index.json'));
-      } else {
-        _overrideStoreDir = join(base, 'store');
-        _overrideTimelinePath = join(base, 'timeline.jsonl');
-        setCacheOverride(_overrideStoreDir, join(base, 'index.json'));
-      }
+    } else if (storeDir) {
+      // Accept either `.clew/memory` or `.clew/memory/store`; normalize to base.
+      const base = storeDir.endsWith('store') ? storeDir.slice(0, -6) : storeDir;
+      _overrideStoreDir = join(base, 'store');
+      _overrideTimelinePath = join(base, 'timeline.jsonl');
+      setCacheOverride(_overrideStoreDir, join(base, 'index.json'));
     }
-    MemoryDB.instance = new MemoryDB(dbPath);
+    MemoryDB.instance = new MemoryDB(storeDir);
     return MemoryDB.instance;
   }
 
@@ -417,7 +423,9 @@ export class MemoryDB {
     };
     try {
       writeRecordAtomic(found.filePath, stringifyMemoryFile(updated, found.key, found.hash));
-    } catch {}
+    } catch {
+      // Access counters are ranking metadata; reads must remain available.
+    }
     return found.record;
   }
 
@@ -567,7 +575,10 @@ export class MemoryDB {
       };
       try {
         writeRecordAtomic(allRec.filePath, stringifyMemoryFile(updated, allRec.key, allRec.hash));
-      } catch {}
+      } catch {
+        // Access timestamps are ranking metadata only. Recall itself must stay
+        // available when this best-effort bookkeeping cannot be persisted.
+      }
     }
     return limited.map(
       ({ _key, ...rest }) => rest as MemoryRecord & { score: number; scoreBreakdown?: Record<string, number> },
@@ -622,7 +633,9 @@ export class MemoryDB {
         try {
           unlinkSync(filePath);
           deleted++;
-        } catch {}
+        } catch {
+          // A failed deletion is not counted as pruned; continue with other records.
+        }
       }
     }
     if (deleted > 0) invalidateIndex();
@@ -636,13 +649,7 @@ export class MemoryDB {
     return { total: records.length, byType };
   }
 
-  close(): void {}
-
-  // Compatibility: expose db handle for legacy tests (no-op)
-  get db(): any {
-    return {
-      prepare: () => ({ run: () => {}, get: () => null, all: () => [] }),
-      exec: () => {},
-    };
+  close(): void {
+    // Filesystem-backed store has no persistent handle to close.
   }
 }

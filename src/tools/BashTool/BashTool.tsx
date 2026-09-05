@@ -28,8 +28,9 @@ import { extractClaudeCodeHints } from '../../utils/claudeCodeHints.js';
 import { detectCodeIndexingFromCommand } from '../../utils/codeIndexing.js';
 import { isEnvTruthy } from '../../utils/envUtils.js';
 import { isENOENT, ShellError } from '../../utils/errors.js';
-import { detectFileEncoding, detectLineEndings, getFileModificationTime, writeTextContent } from '../../utils/file.js';
+import { detectLineEndings, getFileModificationTime, writeTextContent } from '../../utils/file.js';
 import { fileHistoryEnabled, fileHistoryTrackEdit } from '../../utils/fileHistory.js';
+import { detectFileEncoding } from '../../utils/fileReadCache.js';
 import { truncate } from '../../utils/format.js';
 import { getFsImplementation } from '../../utils/fsOperations.js';
 import { lazySchema } from '../../utils/lazySchema.js';
@@ -1015,12 +1016,16 @@ export const BashTool = buildTool({
       try {
         const { hookBashOutcome } = await import('../../taste/hooks.js');
         hookBashOutcome(input.command, result.code);
-      } catch {}
+      } catch {
+        /* best-effort: auxiliary failure must not affect the primary flow */
+      }
     }
     try {
       const { observe } = await import('../../shining/observer.js');
       observe({ type: 'tool_result', tool: 'bash', success: result.code === 0, detail: input.command.slice(0, 80) });
-    } catch {}
+    } catch {
+      /* best-effort: auxiliary failure must not affect the primary flow */
+    }
     return {
       data,
     };

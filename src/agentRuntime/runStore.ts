@@ -44,6 +44,12 @@ export class RunStore {
     const previous = this.approvalLocks.get(runId) ?? Promise.resolve();
     const next = previous.then(fn, fn);
     this.approvalLocks.set(runId, next);
+    // Bound map growth: drop the chain once settled, unless a newer chain
+    // for the same run has already replaced it.
+    const release = (): void => {
+      if (this.approvalLocks.get(runId) === next) this.approvalLocks.delete(runId);
+    };
+    void next.then(release, release);
     return next;
   }
 
@@ -67,12 +73,18 @@ export class RunStore {
 
     while (true) {
       const runId = `run-${dateStr}-${String(counter).padStart(3, '0')}`;
-      const runPath = this.getRunDir(runId);
       try {
-        await fs.access(runPath);
-        counter++;
-      } catch {
+        // Atomic reservation: non-recursive mkdir fails with EEXIST when the
+        // directory already exists, so two concurrent generators cannot be
+        // handed the same ID (no access-then-create TOCTOU window).
+        await fs.mkdir(this.getRunDir(runId));
         return runId;
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException)?.code === 'EEXIST') {
+          counter++;
+          continue;
+        }
+        throw error;
       }
     }
   }
@@ -84,6 +96,7 @@ export class RunStore {
 
     await this.saveRun(run);
 
+    const nowIso = new Date().toISOString();
     const initialState: AgentState = {
       runId: run.id,
       status: run.status,
@@ -94,6 +107,10 @@ export class RunStore {
       knownFiles: [],
       changedFiles: [],
       openApprovals: [],
+      toolCalls: 0,
+      llmCalls: 0,
+      startedAt: nowIso,
+      agentSteps: {},
     };
     await this.saveState(run.id, initialState);
   }
@@ -121,7 +138,13 @@ export class RunStore {
   async loadState(runId: string): Promise<AgentState> {
     const statePath = path.join(this.getRunDir(runId), 'state.json');
     const data = await fs.readFile(statePath, 'utf-8');
-    return JSON.parse(data) as AgentState;
+    const state = JSON.parse(data) as AgentState;
+    // Backfill counters for states written before budget tracking existed.
+    state.toolCalls ??= 0;
+    state.llmCalls ??= 0;
+    state.startedAt ??= new Date().toISOString();
+    state.agentSteps ??= {};
+    return state;
   }
 
   async listRuns(): Promise<AgentRun[]> {
@@ -174,10 +197,18 @@ export class RunStore {
     const eventsPath = path.join(this.getRunDir(runId), 'events.jsonl');
     try {
       const data = await fs.readFile(eventsPath, 'utf-8');
-      return data
-        .split('\n')
-        .filter(line => line.trim().length > 0)
-        .map(line => JSON.parse(line) as RuntimeEvent);
+      const events: RuntimeEvent[] = [];
+      // Per-line tolerance: one truncated/corrupt line (e.g. power loss
+      // mid-append) must not discard the entire history.
+      for (const line of data.split('\n')) {
+        if (!line.trim()) continue;
+        try {
+          events.push(JSON.parse(line) as RuntimeEvent);
+        } catch {
+          /* skip corrupt line, keep the rest */
+        }
+      }
+      return events;
     } catch {
       return [];
     }
@@ -232,10 +263,17 @@ export class RunStore {
     const approvalsPath = path.join(this.getRunDir(runId), 'approvals.jsonl');
     try {
       const data = await fs.readFile(approvalsPath, 'utf-8');
-      return data
-        .split('\n')
-        .filter(line => line.trim().length > 0)
-        .map(line => JSON.parse(line) as ApprovalRequest);
+      const approvals: ApprovalRequest[] = [];
+      // Per-line tolerance — see loadEvents.
+      for (const line of data.split('\n')) {
+        if (!line.trim()) continue;
+        try {
+          approvals.push(JSON.parse(line) as ApprovalRequest);
+        } catch {
+          /* skip corrupt line, keep the rest */
+        }
+      }
+      return approvals;
     } catch {
       return [];
     }

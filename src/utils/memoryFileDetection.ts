@@ -25,6 +25,12 @@ function toComparable(p: string): string {
   return IS_WINDOWS ? posixForm.toLowerCase() : posixForm;
 }
 
+/** Segment-aware containment check for already-comparable paths. */
+function isWithinComparableDir(candidate: string, dir: string): boolean {
+  const base = dir.replace(/\/+$/, '');
+  return candidate === base || candidate.startsWith(`${base}/`);
+}
+
 /**
  * Detects if a file path is a session-related file under ~/.claude.
  * Returns the type of session file or null if not a session file.
@@ -36,7 +42,7 @@ export function detectSessionFileType(filePath: string): 'session_memory' | 'ses
   // reaching here, so we only need separator + case normalization.
   const normalized = toComparable(filePath);
   const configDirCmp = toComparable(configDir);
-  if (!normalized.startsWith(configDirCmp)) {
+  if (!isWithinComparableDir(normalized, configDirCmp)) {
     return null;
   }
   if (normalized.includes('/session-memory/') && normalized.endsWith('.md')) {
@@ -154,16 +160,15 @@ export function isMemoryDirectory(dirPath: string): boolean {
   if (isAutoMemoryEnabled()) {
     const autoMemPath = getAutoMemPath();
     const autoMemDirCmp = toComparable(autoMemPath.replace(/[/\\]+$/, ''));
-    const autoMemPathCmp = toComparable(autoMemPath);
-    if (normalizedCmp === autoMemDirCmp || normalizedCmp.startsWith(autoMemPathCmp)) {
+    if (isWithinComparableDir(normalizedCmp, autoMemDirCmp)) {
       return true;
     }
   }
 
   const configDirCmp = toComparable(getClewConfigHomeDir());
   const memoryBaseCmp = toComparable(getMemoryBaseDir());
-  const underConfig = normalizedCmp.startsWith(configDirCmp);
-  const underMemoryBase = normalizedCmp.startsWith(memoryBaseCmp);
+  const underConfig = isWithinComparableDir(normalizedCmp, configDirCmp);
+  const underMemoryBase = isWithinComparableDir(normalizedCmp, memoryBaseCmp);
 
   if (!underConfig && !underMemoryBase) {
     return false;
