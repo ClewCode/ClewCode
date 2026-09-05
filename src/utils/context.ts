@@ -4,7 +4,7 @@ import { getProviderRegistryEntry } from '../services/ai/providerRegistry.js';
 import { getGlobalConfig } from './config.js';
 import { isEnvTruthy } from './envUtils.js';
 import { resolveAntModel } from './model/antModels.js';
-import { getCanonicalName } from './model/model.js';
+import { getCanonicalName } from './model/canonicalModelName.js';
 import { getModelCapability } from './model/modelCapabilities.js';
 
 // Model context window size (200k tokens for all models right now)
