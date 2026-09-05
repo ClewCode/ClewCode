@@ -51,7 +51,8 @@
     "session": "bun run scripts/session.ts",
     "agent-room": "bun run scripts/agent-room.ts",
     "install:unix": "bash scripts/install.sh",
-    "install:win": "powershell -ExecutionPolicy Bypass -File scripts/install.ps1"
+    "install:win": "powershell -ExecutionPolicy Bypass -File scripts/install.ps1",
+    "test:pr-changelog": "node --test scripts/pr-changelog.test.mjs"
   },
   "keywords": [
     "ai",

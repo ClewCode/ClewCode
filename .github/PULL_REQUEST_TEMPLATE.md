@@ -19,6 +19,12 @@ Describe the changes in this PR.
 
 <!-- Example: This PR fixes..., adds..., removes..., or updates... -->
 
+## Changelog
+
+Write one concise sentence that should appear in `CHANGELOG.md` after this PR merges. CI requires this section and the merge workflow adds the PR number automatically.
+
+<!-- Example: Fix provider selection so session-only changes never overwrite global configuration. -->
+
 ## Motivation and Context
 
 Explain why this change is needed.

@@ -88,18 +88,12 @@ jobs:
         run: bun ci
 
       - name: Type check
+        run: bun x tsc --noEmit
+
+      - name: Debt regression checks
         run: |
-          set +e
-          bun x tsc --noEmit 2>tsc-output.txt
-          count=$(grep -c "error TS" tsc-output.txt || true)
-          baseline=$(cat .ts-error-baseline)
-          echo "Found $count TypeScript errors (baseline: $baseline)"
-          if [ "$count" -gt "$baseline" ]; then
-            echo "FAIL: $count errors exceeds baseline $baseline"
-            echo "Update .ts-error-baseline when errors are fixed"
-            exit 1
-          fi
-          echo "OK: $count errors ≤ baseline $baseline"
+          bun run check:circular
+          bun run check:suppressions
 
   lint:
     name: Lint and Format

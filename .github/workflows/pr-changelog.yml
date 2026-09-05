@@ -1,0 +1,24 @@
+name: PR Changelog
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Changelog Entry
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Test changelog parser
+        run: node --test scripts/pr-changelog.test.mjs
+
+      - name: Validate PR changelog
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: node scripts/pr-changelog.mjs validate
