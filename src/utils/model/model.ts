@@ -17,7 +17,7 @@ import { capitalize } from '../stringUtils.js';
 import { isModelAlias, type ModelAlias } from './aliases.js';
 import { getAntModelOverrideConfig, resolveAntModel } from './antModels.js';
 import { getCanonicalName } from './canonicalModelName.js';
-import { isModelAllowed } from './modelAllowlist.js';
+import { isModelAllowedByList } from './modelAllowlistCore.js';
 import { getModelStrings } from './modelStrings.js';
 import { getActiveProviderId, getAPIProvider, isFirstPartyAnthropicBaseUrl } from './providers.js';
 
@@ -117,7 +117,10 @@ export function getUserSpecifiedModelSetting(): ModelSetting | undefined {
   }
 
   // Ignore the user-specified model if it's not in the availableModels allowlist.
-  if (specifiedModel && !isModelAllowed(specifiedModel)) {
+  if (
+    specifiedModel &&
+    !isModelAllowedByList(specifiedModel, getSettings()?.availableModels, parseUserSpecifiedModel)
+  ) {
     return undefined;
   }
 
