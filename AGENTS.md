@@ -21,7 +21,7 @@ bun run format           # Biome format --write
 bun run check            # Biome check --write
 bun run check:circular   # Runtime import-cycle ratchet (baseline 338)
 bun run check:circular:strict # Fail while any runtime cycle remains
-bun run check:suppressions    # @ts-expect-error ratchet (baseline 1377)
+bun run check:suppressions    # @ts-expect-error ratchet (baseline 1372)
 bun run check:suppressions:strict # Fail while any suppression remains
 bun x tsc --noEmit       # Typecheck only (incremental — see below)
 bun ci                   # Lockfile integrity
@@ -41,7 +41,7 @@ Prefer `/clew-verify` before push (gate + CLI smoke). Prefer `/clew-release` for
 repo: **~75s cold, ~18s warm**, identical error set either way. The first run after a
 `git pull` or a wide refactor pays full price; repeat runs are the fast ones.
 
-**`tsc --noEmit` is currently clean (0 errors).** The remaining type debt is explicit suppression, not compiler errors: `.ts-expect-error-baseline` currently ratchets **1,377** `@ts-expect-error` directives. `check:ci` fails if that number increases; lower the baseline whenever suppressions are removed.
+**`tsc --noEmit` is currently clean (0 errors).** The remaining type debt is explicit suppression, not compiler errors: `.ts-expect-error-baseline` currently ratchets **1,372** `@ts-expect-error` directives. `check:ci` fails if that number increases; lower the baseline whenever suppressions are removed.
 
 Redirect to a file and grep it rather than re-running `tsc` per file — a naive
 per-file loop re-typechecks the whole project each iteration and takes minutes.

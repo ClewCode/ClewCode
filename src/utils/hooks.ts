@@ -87,7 +87,7 @@ import type {
   PermissionRequestHookInput,
   ElicitationHookInput,
   ElicitationResultHookInput,
-  PermissionUpdate,
+  PermissionUpdate as HookPermissionUpdate,
   ExitReason,
   SyncHookJSONOutput,
   AsyncHookJSONOutput,
@@ -111,6 +111,7 @@ import {
 import { logError } from './log.js';
 import { createCombinedAbortSignal } from './combinedAbortSignal.js';
 import type { PermissionResult } from './permissions/PermissionResult.js';
+import type { PermissionUpdate } from './permissions/PermissionUpdateSchema.js';
 import { registerPendingAsyncHook } from './hooks/AsyncHookRegistry.js';
 import { enqueuePendingNotification } from './messageQueueManager.js';
 import { extractTextContent, getLastAssistantMessage, wrapInSystemReminder } from './messages.js';
@@ -4071,6 +4072,12 @@ export async function executeSessionEndHooks(
  * @param timeoutMs Optional timeout in milliseconds for hook execution
  * @returns Async generator that yields progress messages and returns aggregated result
  */
+function isHookPermissionUpdate(update: PermissionUpdate): update is HookPermissionUpdate {
+  if ('behavior' in update && update.behavior === 'defer') return false;
+  if (update.type === 'setMode' && update.mode === 'ask') return false;
+  return true;
+}
+
 export async function* executePermissionRequestHooks<ToolInput>(
   toolName: string,
   toolUseID: string,
@@ -4093,7 +4100,7 @@ export async function* executePermissionRequestHooks<ToolInput>(
     hook_event_name: 'PermissionRequest',
     tool_name: toolName,
     tool_input: toolInput,
-    permission_suggestions: permissionSuggestions,
+    permission_suggestions: permissionSuggestions?.filter(isHookPermissionUpdate),
   };
 
   yield* executeHooks({

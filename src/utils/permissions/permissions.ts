@@ -355,7 +355,6 @@ async function runPermissionRequestHooksForHeadlessAgent(
       input,
       context,
       permissionMode,
-      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       suggestions,
       context.abortController.signal,
     )) {

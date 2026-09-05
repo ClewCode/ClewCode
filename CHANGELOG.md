@@ -22,7 +22,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
-- Added CI debt ratchets for runtime circular imports and `@ts-expect-error` directives. The circular detector now excludes type-only imports/exports, reducing the meaningful runtime-cycle baseline from the previous noisy 1,329 report to 338; suppression debt is locked at 1,377 and both baselines may only move downward.
+- Added CI debt ratchets for runtime circular imports and `@ts-expect-error` directives. The circular detector now excludes type-only imports/exports, reducing the meaningful runtime-cycle baseline from the previous noisy 1,329 report to 338; suppression debt is locked at 1,372 and both baselines may only move downward.
 
 ### Fixed
 

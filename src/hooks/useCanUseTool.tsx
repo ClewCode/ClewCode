@@ -121,7 +121,6 @@ function useCanUseTool(
                     tool,
                     input,
                     toolUseContext,
-                    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
                     messageId: ctx.messageId,
                     toolUseID,
                   },
