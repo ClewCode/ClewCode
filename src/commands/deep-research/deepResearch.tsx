@@ -77,7 +77,7 @@ function DeepResearchRunnerView({ query, mode, onDone }: DeepResearchRunnerViewP
         setState(prev => ({ ...prev, phase: 'planning', phaseIndex: 0 }));
         await initWorkspace(cwd);
         const plan = createResearchPlan(query, mode);
-        const { runId, runDir } = await createRunStore(cwd, query, mode);
+        const { runDir } = await createRunStore(cwd, query, mode);
         await writePlanToRun(runDir, plan);
 
         if (!active) return;

@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+﻿import { randomUUID } from 'crypto';
 import { basename } from 'path';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { logEvent } from 'src/services/analytics/index.js';
@@ -47,7 +47,7 @@ export function useDiffInIDE({ onChange, toolUseContext, filePath, edits, editMo
   const [hasError, setHasError] = useState(false);
 
   const sha = useMemo(() => randomUUID().slice(0, 6), []);
-  const tabName = useMemo(() => `✻ [Clew Code] ${basename(filePath)} (${sha}) ⧉`, [filePath, sha]);
+  const tabName = useMemo(() => `âœ» [Clew Code] ${basename(filePath)} (${sha}) â§‰`, [filePath, sha]);
 
   const shouldShowDiffInIDE =
     hasAccessToIDEExtensionDiffFeature(toolUseContext.options.mcpClients) &&
@@ -245,7 +245,7 @@ async function showDiffInIDE(
     }
 
     // Bounded wait: an IDE extension that stays connected but never resolves
-    // must not hang the approval flow forever — time out and fall back to the
+    // must not hang the approval flow forever â€” time out and fall back to the
     // terminal approval UI (the caller's catch sets hasError for exactly this).
     const IDE_DIFF_TIMEOUT_MS = 5 * 60 * 1000;
     let timeoutHandle: ReturnType<typeof setTimeout> | undefined;

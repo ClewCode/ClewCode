@@ -10,9 +10,6 @@
 import { spawn } from 'child_process';
 import { createConnection } from 'net';
 import { join } from 'path';
-import { getClewConfigHomeDir } from '../../utils/envUtils.js';
-
-const _DAEMON_DIR = join(getClewConfigHomeDir(), 'daemon');
 
 const PIPE_NAME =
   process.platform === 'win32'

@@ -119,9 +119,6 @@ export function ModelPicker({
   // Let the list own arrow keys when the picker opens. Search is activated by
   // the first typed character so ↑/↓ never get swallowed by the search input.
   const [isSearchActive, setIsSearchActive] = useState(false);
-  // Bumped by Tab/Shift+Tab to remount Select so it re-reads defaultFocusValue.
-  const [jumpToken, setJumpToken] = useState(0);
-  const [jumpTarget, setJumpTarget] = useState<string | undefined>(undefined);
   type Tab = 'models' | 'providers' | 'effort' | 'agents';
   const TABS: Tab[] = ['models', 'providers', 'effort', 'agents'];
   const [view, setView] = useState<Tab>('models');
@@ -318,24 +315,6 @@ export function ModelPicker({
     if (!option || option.value === NO_PREFERENCE) return `${activeProviderId}/default`;
     if (option.providerId && option.modelId) return `${option.providerId}/${option.modelId}`;
     return option.value;
-  }
-
-  function jumpProviderSection(direction: 1 | -1): void {
-    const sections = filteredOptions.filter(opt => opt.type === 'section');
-    if (sections.length === 0) return;
-    const currentIndex = effectiveFocusedValue
-      ? filteredOptions.findIndex(opt => opt.value === effectiveFocusedValue)
-      : -1;
-    const sectionIndexes = sections.map(s => filteredOptions.indexOf(s));
-    const target =
-      direction === 1
-        ? (sectionIndexes.find(i => i > currentIndex) ?? sectionIndexes[0]!)
-        : (sectionIndexes.filter(i => i < currentIndex).pop() ?? sectionIndexes[sectionIndexes.length - 1]!);
-    const firstModel = filteredOptions.slice(target + 1).find(isRealModelOption);
-    if (!firstModel) return;
-    setFocusedValue(firstModel.value);
-    setJumpTarget(firstModel.value);
-    setJumpToken(t => t + 1);
   }
 
   useInput(
@@ -543,10 +522,9 @@ export function ModelPicker({
       {isStandaloneCommand && filteredOptions.length > 0 && <ModelListHeader columns={columns} />}
       {filteredOptions.length > 0 ? (
         <Select
-          key={`models-${jumpToken}`}
           isDisabled={isSearchActive}
           defaultValue={isStandaloneCommand ? undefined : initialValue}
-          defaultFocusValue={jumpTarget ?? initialFocusValue}
+          defaultFocusValue={initialFocusValue}
           options={(isStandaloneCommand ? renderedOptions : filteredOptions) as OptionWithDescription<string>[]}
           onChange={handleSelect}
           onFocus={handleFocus}

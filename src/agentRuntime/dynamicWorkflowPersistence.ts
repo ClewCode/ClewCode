@@ -17,6 +17,7 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { writeTextFileAtomic } from './atomicFile.js';
 import type { DynamicSubtask, DynamicWorkflow } from './dynamicWorkflow.js';
 
 const RUNTIME_DIR = '.clew/runs';
@@ -71,7 +72,7 @@ export async function recordRunningSubtasks(workspaceRoot: string, state: Dynami
   const dir = runDir(workspaceRoot, state.runId);
   await ensureDir(dir);
   const next = { ...state, updatedAt: nowIso() };
-  await fs.writeFile(path.join(dir, 'state.json'), JSON.stringify(next, null, 2), 'utf-8');
+  await writeTextFileAtomic(path.join(dir, 'state.json'), JSON.stringify(next, null, 2));
 }
 
 export async function createDynamicRun(workspaceRoot: string, workflow: DynamicWorkflow): Promise<DynamicRunState> {
@@ -89,8 +90,8 @@ export async function createDynamicRun(workspaceRoot: string, workflow: DynamicW
     lastCompletedWave: -1,
   };
   await Promise.all([
-    fs.writeFile(path.join(dir, 'workflow.json'), JSON.stringify(workflow, null, 2), 'utf-8'),
-    fs.writeFile(path.join(dir, 'state.json'), JSON.stringify(state, null, 2), 'utf-8'),
+    writeTextFileAtomic(path.join(dir, 'workflow.json'), JSON.stringify(workflow, null, 2)),
+    writeTextFileAtomic(path.join(dir, 'state.json'), JSON.stringify(state, null, 2)),
   ]);
   return state;
 }
@@ -121,7 +122,7 @@ export async function updateDynamicRun(workspaceRoot: string, state: DynamicRunS
   const dir = runDir(workspaceRoot, state.runId);
   await ensureDir(dir);
   const next: DynamicRunState = { ...state, updatedAt: nowIso() };
-  await fs.writeFile(path.join(dir, 'state.json'), JSON.stringify(next, null, 2), 'utf-8');
+  await writeTextFileAtomic(path.join(dir, 'state.json'), JSON.stringify(next, null, 2));
   return next;
 }
 

@@ -202,7 +202,6 @@ function toProviderModelInfo(provider: ProviderId, model: RemoteModelPayload): P
   const crossProviderMaxContext =
     registryMaxContext ??
     (() => {
-      const lowerId = id.toLowerCase();
       for (const pid of PROVIDER_IDS) {
         if (pid === provider) continue;
         const entry = getProviderRegistryEntry(pid);
@@ -223,7 +222,6 @@ function toProviderModelInfo(provider: ProviderId, model: RemoteModelPayload): P
   const crossProviderMaxOutput =
     registryMaxOutput ??
     (() => {
-      const lowerId = id.toLowerCase();
       for (const pid of PROVIDER_IDS) {
         if (pid === provider) continue;
         const entry = getProviderRegistryEntry(pid);

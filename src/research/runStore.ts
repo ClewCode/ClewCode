@@ -1,8 +1,8 @@
-import { appendFile, mkdir, readdir, readFile, writeFile } from 'fs/promises';
+import { appendFile, mkdir, readdir, readFile, rename, rm, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { DOT_CLEW } from '../utils/clewPaths.js';
 import { getFsImplementation } from '../utils/fsOperations.js';
-import type { ResearchClaim, ResearchPlan, ResearchRun, ResearchSource } from './types.js';
+import type { ResearchClaim, ResearchMode, ResearchPlan, ResearchRun, ResearchSource } from './types.js';
 
 export function slugify(text: string): string {
   return text
@@ -27,14 +27,64 @@ export type RunStore = {
   runDir: string;
 };
 
-export async function createRunStore(cwd: string, query: string, mode: any): Promise<RunStore> {
-  const runId = generateRunId(query);
-  const runDir = join(cwd, DOT_CLEW, 'research', 'runs', runId);
+const metadataLocks = new Map<string, Promise<unknown>>();
 
-  const fsImpl = getFsImplementation();
-  if (!fsImpl.existsSync(runDir)) {
-    await mkdir(runDir, { recursive: true });
+function withMetadataLock<T>(runDir: string, fn: () => Promise<T>): Promise<T> {
+  const previous = metadataLocks.get(runDir) ?? Promise.resolve();
+  const next = previous.then(fn, fn);
+  metadataLocks.set(runDir, next);
+  const release = (): void => {
+    if (metadataLocks.get(runDir) === next) metadataLocks.delete(runDir);
+  };
+  void next.then(release, release);
+  return next;
+}
+
+async function writeJsonAtomic(filePath: string, value: unknown): Promise<void> {
+  const tempPath = `${filePath}.tmp.${process.pid}.${Math.random().toString(36).slice(2, 10)}`;
+  try {
+    await writeFile(tempPath, JSON.stringify(value, null, 2), 'utf-8');
+    await rename(tempPath, filePath);
+  } catch (error) {
+    await rm(tempPath, { force: true }).catch(() => undefined);
+    throw error;
   }
+}
+
+async function mutateRunMetadata(runDir: string, mutate: (run: ResearchRun) => void): Promise<void> {
+  return withMetadataLock(runDir, async () => {
+    const runJsonPath = join(runDir, 'run.json');
+    const content = await readFile(runJsonPath, 'utf-8');
+    const run = JSON.parse(content) as ResearchRun;
+    mutate(run);
+    await writeJsonAtomic(runJsonPath, run);
+  });
+}
+
+async function allocateRunDirectory(cwd: string, query: string): Promise<RunStore> {
+  const runsDir = join(cwd, DOT_CLEW, 'research', 'runs');
+  await mkdir(runsDir, { recursive: true });
+  const baseRunId = generateRunId(query);
+  let counter = 1;
+
+  while (true) {
+    const runId = counter === 1 ? baseRunId : `${baseRunId}-${String(counter).padStart(3, '0')}`;
+    const runDir = join(runsDir, runId);
+    try {
+      await mkdir(runDir);
+      return { runId, runDir };
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'EEXIST') {
+        counter += 1;
+        continue;
+      }
+      throw error;
+    }
+  }
+}
+
+export async function createRunStore(cwd: string, query: string, mode: ResearchMode): Promise<RunStore> {
+  const { runId, runDir } = await allocateRunDirectory(cwd, query);
 
   // Write query.md
   const queryMdContent = [
@@ -72,7 +122,7 @@ export async function createRunStore(cwd: string, query: string, mode: any): Pro
     savedToWiki: false,
     savedToMemoryPending: false,
   };
-  await writeFile(join(runDir, 'run.json'), JSON.stringify(runJson, null, 2), 'utf-8');
+  await writeJsonAtomic(join(runDir, 'run.json'), runJson);
 
   return { runId, runDir };
 }
@@ -81,35 +131,23 @@ export async function appendSourceToRun(runDir: string, source: ResearchSource):
   const line = `${JSON.stringify(source)}\n`;
   await appendFile(join(runDir, 'sources.jsonl'), line, 'utf-8');
 
-  // Increment sourceCount in run.json
-  const runJsonPath = join(runDir, 'run.json');
-  try {
-    const content = await readFile(runJsonPath, 'utf-8');
-    const run: ResearchRun = JSON.parse(content);
+  // Serialize metadata updates so parallel collectors cannot lose increments.
+  await mutateRunMetadata(runDir, run => {
     run.sourceCount += 1;
-    await writeFile(runJsonPath, JSON.stringify(run, null, 2), 'utf-8');
-  } catch (_err) {
-    // Ignore issues if run.json cannot be read/updated
-  }
+  });
 }
 
 export async function appendClaimToRun(runDir: string, claim: ResearchClaim): Promise<void> {
   const line = `${JSON.stringify(claim)}\n`;
   await appendFile(join(runDir, 'claims.jsonl'), line, 'utf-8');
 
-  // Update claimCount in run.json
-  const runJsonPath = join(runDir, 'run.json');
-  try {
-    const content = await readFile(runJsonPath, 'utf-8');
-    const run: ResearchRun = JSON.parse(content);
+  // Serialize metadata updates so parallel extractors cannot lose increments.
+  await mutateRunMetadata(runDir, run => {
     run.claimCount += 1;
     if (claim.status === 'unsupported') {
       run.unsupportedClaimCount += 1;
     }
-    await writeFile(runJsonPath, JSON.stringify(run, null, 2), 'utf-8');
-  } catch (_err) {
-    // Ignore issues
-  }
+  });
 }
 
 export async function writePlanToRun(runDir: string, plan: ResearchPlan): Promise<void> {
@@ -151,18 +189,12 @@ export async function completeRunStore(
   savedToWiki = false,
   savedToMemoryPending = false,
 ): Promise<void> {
-  const runJsonPath = join(runDir, 'run.json');
-  try {
-    const content = await readFile(runJsonPath, 'utf-8');
-    const run: ResearchRun = JSON.parse(content);
+  await mutateRunMetadata(runDir, run => {
     run.status = 'completed';
     run.completedAt = new Date().toISOString();
     run.savedToWiki = savedToWiki;
     run.savedToMemoryPending = savedToMemoryPending;
-    await writeFile(runJsonPath, JSON.stringify(run, null, 2), 'utf-8');
-  } catch (_err) {
-    // Ignore issues
-  }
+  });
 }
 
 export async function getLatestRun(cwd: string): Promise<{ run: ResearchRun; runDir: string } | null> {
@@ -177,23 +209,26 @@ export async function getLatestRun(cwd: string): Promise<{ run: ResearchRun; run
     return null;
   }
 
-  // Sort by entry directory name (since format is YYYY-MM-DD-query, alphabetical/date sorting is perfect)
-  entries.sort();
-  const latestRunId = entries[entries.length - 1]!;
-  const runDir = join(runsDir, latestRunId);
-  const runJsonPath = join(runDir, 'run.json');
-
-  if (!fsImpl.existsSync(runJsonPath)) {
-    return null;
+  let latest: { run: ResearchRun; runDir: string } | null = null;
+  for (const runId of entries) {
+    const runDir = join(runsDir, runId);
+    const runJsonPath = join(runDir, 'run.json');
+    if (!fsImpl.existsSync(runJsonPath)) continue;
+    try {
+      const content = await readFile(runJsonPath, 'utf-8');
+      const run = JSON.parse(content) as ResearchRun;
+      if (
+        !latest ||
+        run.createdAt > latest.run.createdAt ||
+        (run.createdAt === latest.run.createdAt && run.id > latest.run.id)
+      ) {
+        latest = { run, runDir };
+      }
+    } catch {
+      // Ignore corrupted/incomplete runs and continue looking for the newest valid one.
+    }
   }
-
-  try {
-    const content = await readFile(runJsonPath, 'utf-8');
-    const run: ResearchRun = JSON.parse(content);
-    return { run, runDir };
-  } catch (_err) {
-    return null;
-  }
+  return latest;
 }
 
 export async function listAllRuns(cwd: string): Promise<ResearchRun[]> {

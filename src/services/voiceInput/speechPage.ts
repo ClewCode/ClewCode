@@ -221,7 +221,16 @@ export function speechPageHtml(lang = 'th-TH'): string {
   let recognition = null;
 
   async function sendResult(text) {
-    try { await fetch(BASE + '/result', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({text}) }); } catch {}
+    try {
+      const response = await fetch(BASE + '/result', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({text}),
+      });
+      return response.ok;
+    } catch {
+      return false;
+    }
   }
 
   function setUI(state) {
@@ -269,7 +278,6 @@ export function speechPageHtml(lang = 'th-TH'): string {
         sendBtn.disabled = false;
         recordBtn.textContent = 'Record';
         recording = false;
-        sendResult(transcript.trim());
       } else if (recording) {
         rec.start();
       } else {
@@ -324,10 +332,17 @@ export function speechPageHtml(lang = 'th-TH'): string {
 
   sendBtn.addEventListener('click', async () => {
     if (transcript.trim()) {
-      await sendResult(transcript.trim());
-      status.textContent = 'Sent ✓';
-      hint.textContent = 'Switch to terminal and run /voice check';
       sendBtn.disabled = true;
+      status.textContent = 'Sending...';
+      const sent = await sendResult(transcript.trim());
+      if (sent) {
+        status.textContent = 'Sent ✓';
+        hint.textContent = 'Switch to terminal and run /voice check';
+      } else {
+        status.textContent = 'Send failed';
+        hint.textContent = 'Check that the voice server is still running, then try again';
+        sendBtn.disabled = false;
+      }
     }
   });
 

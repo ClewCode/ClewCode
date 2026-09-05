@@ -32,7 +32,7 @@ import {
   getConditionalRulesForCwdLevelDirectory,
   type MemoryFileInfo,
 } from './claudemd.js';
-import { dirname, parse, relative, resolve } from 'path';
+import { dirname, isAbsolute, parse, relative, resolve, sep } from 'path';
 import { getCwd } from 'src/utils/cwd.js';
 import { getViewedTeammateTask } from '../state/selectors.js';
 import { logError } from './log.js';
@@ -1440,16 +1440,23 @@ export function getDirectoriesToProcess(
   targetPath: string,
   originalCwd: string,
 ): { nestedDirs: string[]; cwdLevelDirs: string[] } {
-  // Build list of directories from original CWD to targetPath's directory
+  // Build list of directories from original CWD to targetPath's directory.
+  // Use path-segment containment rather than string-prefix matching: a sibling
+  // such as `/repo-evil` must never be treated as nested under `/repo` and load
+  // its CLAUDE.md/rules into the current workspace context.
+  const resolvedCwd = resolve(originalCwd);
   const targetDir = dirname(resolve(targetPath));
+  const targetRelativeToCwd = relative(resolvedCwd, targetDir);
+  const targetIsWithinCwd =
+    targetRelativeToCwd === '' ||
+    (!targetRelativeToCwd.startsWith(`..${sep}`) && targetRelativeToCwd !== '..' && !isAbsolute(targetRelativeToCwd));
   const nestedDirs: string[] = [];
   let currentDir = targetDir;
 
-  // Walk up from target directory to original CWD
-  while (currentDir !== originalCwd && currentDir !== parse(currentDir).root) {
-    if (currentDir.startsWith(originalCwd)) {
-      nestedDirs.push(currentDir);
-    }
+  // Walk up from target directory to original CWD only when the target is
+  // actually inside that directory tree.
+  while (targetIsWithinCwd && currentDir !== resolvedCwd && currentDir !== parse(currentDir).root) {
+    nestedDirs.push(currentDir);
     currentDir = dirname(currentDir);
   }
 

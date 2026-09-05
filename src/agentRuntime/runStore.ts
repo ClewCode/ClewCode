@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { writeTextFileAtomic } from './atomicFile.js';
 import { resolveRuntimePath } from './config.js';
 import type { AgentRun, AgentState, ApprovalRequest, RuntimeEvent } from './types.js';
 
@@ -120,7 +121,7 @@ export class RunStore {
     await fs.mkdir(runDir, { recursive: true });
     const runPath = path.join(runDir, 'run.json');
     const sanitizedRun = JSON.parse(scrubSecrets(JSON.stringify(run)));
-    await fs.writeFile(runPath, JSON.stringify(sanitizedRun, null, 2), 'utf-8');
+    await writeTextFileAtomic(runPath, JSON.stringify(sanitizedRun, null, 2));
   }
 
   async loadRun(runId: string): Promise<AgentRun> {
@@ -132,7 +133,7 @@ export class RunStore {
   async saveState(runId: string, state: AgentState): Promise<void> {
     const statePath = path.join(this.getRunDir(runId), 'state.json');
     const sanitizedState = JSON.parse(scrubSecrets(JSON.stringify(state)));
-    await fs.writeFile(statePath, JSON.stringify(sanitizedState, null, 2), 'utf-8');
+    await writeTextFileAtomic(statePath, JSON.stringify(sanitizedState, null, 2));
   }
 
   async loadState(runId: string): Promise<AgentState> {
@@ -217,7 +218,7 @@ export class RunStore {
   async saveCheckpoint(runId: string, checkpointName: string, state: AgentState): Promise<void> {
     const checkpointPath = path.join(this.getRunDir(runId), 'checkpoints', `${checkpointName}.json`);
     const sanitizedState = JSON.parse(scrubSecrets(JSON.stringify(state)));
-    await fs.writeFile(checkpointPath, JSON.stringify(sanitizedState, null, 2), 'utf-8');
+    await writeTextFileAtomic(checkpointPath, JSON.stringify(sanitizedState, null, 2));
   }
 
   async loadCheckpoint(runId: string, checkpointName: string): Promise<AgentState> {
@@ -241,7 +242,7 @@ export class RunStore {
 
   async saveReport(runId: string, reportMarkdown: string): Promise<void> {
     const reportPath = path.join(this.getRunDir(runId), 'report.md');
-    await fs.writeFile(reportPath, scrubSecrets(reportMarkdown), 'utf-8');
+    await writeTextFileAtomic(reportPath, scrubSecrets(reportMarkdown));
   }
 
   async loadReport(runId: string): Promise<string> {

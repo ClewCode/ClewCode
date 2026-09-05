@@ -44,24 +44,6 @@ const PACKAGE_MANAGER_INDICATORS = [
   { lock: 'package-lock.json', name: 'npm' },
 ] as const;
 
-const _CONFIG_INDICATORS = [
-  { file: 'tsconfig.json', label: 'TypeScript' },
-  { file: 'biome.json', label: 'Biome' },
-  { file: '.eslintrc.js', label: 'ESLint' },
-  { file: '.eslintrc.json', label: 'ESLint' },
-  { file: '.prettierrc', label: 'Prettier' },
-  { file: '.prettierrc.json', label: 'Prettier' },
-  { file: 'vitest.config.ts', label: 'Vitest' },
-  { file: 'vitest.config.js', label: 'Vitest' },
-  { file: 'jest.config.ts', label: 'Jest' },
-  { file: 'jest.config.js', label: 'Jest' },
-  { file: '.github/workflows/ci.yml', label: 'CI (GitHub Actions)' },
-  { file: '.github/workflows/ci.yaml', label: 'CI (GitHub Actions)' },
-  { file: 'Dockerfile', label: 'Docker' },
-] as const;
-
-const _KEY_FILES = ['CHANGELOG.md', 'README.md', 'LICENSE.md', 'CONTRIBUTING.md', 'AGENTS.md', 'SECURITY.md'];
-
 async function readJson(path: string): Promise<Record<string, unknown> | null> {
   try {
     const content = await readFile(path, 'utf8');

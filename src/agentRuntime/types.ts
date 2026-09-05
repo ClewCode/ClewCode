@@ -144,29 +144,3 @@ export type AgentState = {
   /** Per-agent step counts (budget: agent max_steps). */
   agentSteps: Record<string, number>;
 };
-
-type RetrievedMemory = {
-  id: string;
-  content: string;
-  score: number;
-};
-
-type ResearchFinding = {
-  sourceId: string;
-  url?: string;
-  title?: string;
-  snippet: string;
-};
-
-type ToolSpec = {
-  name: string;
-  description: string;
-  inputSchema: Record<string, unknown>;
-};
-
-type BudgetRemaining = {
-  steps: number;
-  toolCalls: number;
-  llmCalls: number;
-  timeLeftMs: number;
-};

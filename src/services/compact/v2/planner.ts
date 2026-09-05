@@ -1,16 +1,16 @@
-/**
- * Auto-compact v2 — the planner.
+﻿/**
+ * Auto-compact v2 â€” the planner.
  *
  * The legacy design bound each mechanism to its own threshold, so what
  * happened at a given context size was fixed in advance: cross the line, run
  * the mechanism attached to that line. A tool-heavy session with 300k of
  * re-readable file output and a chat-only session with 300k of irreplaceable
- * reasoning got the same treatment — a full LLM summarization.
+ * reasoning got the same treatment â€” a full LLM summarization.
  *
  * Here there is one decision: *reclaim N tokens, doing the least damage*.
  * Reducers are sorted by how much fidelity they cost and spent in that order
  * until the deficit is covered. Summarization is simply what you reach when
- * the cheap options run out — which, in a tool-heavy session, they usually
+ * the cheap options run out â€” which, in a tool-heavy session, they usually
  * don't. That is the entire behavioral thesis of v2, and it is expressed in
  * about fifteen lines of `planCompaction`.
  */
@@ -19,25 +19,18 @@ import { logForDebugging } from '../../../utils/debug.js';
 import { type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS, logEvent } from '../../analytics/index.js';
 import type { EvictionRecord } from './evictionStore.js';
 import type { ContextPressure } from './ledger.js';
+import { dedupeReducer } from './reducers/dedupe.js';
 import { dropReducer } from './reducers/drop.js';
+import { staleToolReducer } from './reducers/staleTool.js';
 import { summarizeReducer } from './reducers/summarize.js';
 import type { ReduceContext, Reducer, ReducerName } from './types.js';
 
-/**
- * Every reducer, cheapest loss first. Order here *is* the policy.
- *
- * Disabled:
- * - `scored-tool` (loss 0.3, costly): LLM fork to pick tool results; falls back
- *   to stale-tool when the fork is unavailable, so it rarely adds value over
- *   just running stale-tool. Re-enable when per-reducer analytics show it
- *   reclaims meaningfully more than stale-tool alone.
- * - `intelligent-prune` (loss 0.92): regex heuristic that drops whole messages
- *   for matching "done"/"fixed" etc. Too blunt for the fidelity cost; overlaps
- *   with drop/snip. No test coverage. Re-enable with a real eval if revived.
- */
+/** Every active reducer, cheapest loss first. Order here *is* the policy. */
 export const REDUCERS: Reducer[] = [
-  summarizeReducer, // 0.6 — LLM summarization (single-shot compact)
-  dropReducer, // 1.0 — last resort
+  dedupeReducer, // 0.05 â€” superseded identical tool results
+  staleToolReducer, // 0.2 â€” old re-readable tool results
+  summarizeReducer, // 0.6 â€” LLM summarization (single-shot compact)
+  dropReducer, // 0.95 â€” last resort
 ].sort((a, b) => a.loss - b.loss);
 
 export interface PlanStep {
@@ -50,7 +43,7 @@ export interface CompactPlan {
   steps: PlanStep[];
   expectedYield: number;
   deficit: number;
-  /** Why this plan — surfaced in /context and analytics. */
+  /** Why this plan â€” surfaced in /context and analytics. */
   rationale: string;
 }
 
@@ -68,7 +61,7 @@ export interface PlanOptions {
  * `drop` is only ever appended when everything else together still falls
  * short. Because drop can always free something, a returned plan whose
  * expectedYield is under the deficit means the context genuinely cannot be
- * reduced further — not that we declined to try.
+ * reduced further â€” not that we declined to try.
  */
 export function planCompaction(
   pressure: ContextPressure,
@@ -94,7 +87,7 @@ export function planCompaction(
     for (const reducer of REDUCERS) {
       if (covered >= deficit) break;
       if (reducer.costly && !opts.allowCostly) continue;
-      // Drop is not part of the normal ladder — it is the fallback below.
+      // Drop is not part of the normal ladder â€” it is the fallback below.
       if (reducer.name === 'drop') continue;
 
       const remaining = deficit - covered;

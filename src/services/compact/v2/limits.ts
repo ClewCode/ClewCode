@@ -30,10 +30,6 @@ export const MANUAL_COMPACT_BUFFER_TOKENS = 3_000;
 /** Background pre-compaction floor, as a fraction of the act threshold. */
 export const BACKGROUND_MIN_THRESHOLD_PCT = 0.65;
 
-/** Adaptive buffer bounds, selected by session compressibility. */
-export const MIN_ADAPTIVE_BUFFER = 25_000;
-export const MAX_ADAPTIVE_BUFFER = 55_000;
-
 export interface ContextLimits {
   /** Raw context window of the model (after 1M / env overrides). */
   window: number;
@@ -77,12 +73,8 @@ export function computeEffectiveWindow(model: string): number {
   return window - reserved;
 }
 
-/**
- * Derive every budget number from one buffer choice, so the constants can no
- * longer drift apart. `buffer` is the adaptive headroom the caller selected
- * (see selectBuffer); omit it for the static default.
- */
-export function computeLimits(model: string, buffer: number = DEFAULT_BUFFER_TOKENS): ContextLimits {
+/** Derive every budget number from the fixed 80% auto-compact policy. */
+export function computeLimits(model: string): ContextLimits {
   const reserved = Math.min(getMaxOutputTokensForModel(model), MAX_OUTPUT_TOKENS_FOR_SUMMARY);
   const limit = computeEffectiveWindow(model);
   // Auto-compact at 80% — match manual /compact behavior, one big reclaim
@@ -119,20 +111,6 @@ export function computeLimits(model: string, buffer: number = DEFAULT_BUFFER_TOK
     critical: actNow - CRITICAL_BUFFER_TOKENS,
     blocking,
   };
-}
-
-/**
- * Pick the headroom buffer from a session's compressibility ratio (0..1).
- *
- * High ratio (tool-heavy, very compressible) → smaller buffer → act later,
- * because cheap reducers will reclaim plenty. Low ratio (chat-only) → larger
- * buffer → act sooner, because there is little to reclaim without summarizing.
- */
-export function selectBuffer(compressibility: number, bounds?: { minBuffer?: number; maxBuffer?: number }): number {
-  const min = bounds?.minBuffer ?? MIN_ADAPTIVE_BUFFER;
-  const max = bounds?.maxBuffer ?? MAX_ADAPTIVE_BUFFER;
-  const ratio = Math.max(0, Math.min(1, compressibility));
-  return Math.max(min, Math.min(max, Math.round(max - ratio * (max - min))));
 }
 
 /** Background pre-compaction threshold derived from the act threshold. */

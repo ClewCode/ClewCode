@@ -1,4 +1,3 @@
-import { feature } from 'bun:bundle';
 import type { ContentBlockParam } from '@anthropic-ai/sdk/resources/messages.mjs';
 import { randomUUID, type UUID } from 'crypto';
 import last from 'lodash-es/last.js';
@@ -8,13 +7,6 @@ import type { PermissionMode, SDKMessage, SDKStatus } from 'src/entrypoints/sdk/
 
 // SDK types that exist only as Zod schemas — define local aliases for type safety
 type SDKPermissionDenial = { tool_name: string; tool_use_id: string; tool_input: unknown };
-type SDKCompactBoundaryMessage = {
-  type: 'system';
-  subtype: 'compact_boundary';
-  session_id: string;
-  uuid: string;
-  compact_metadata: { preservedSegment?: { tailUuid?: string }; sourceLength: number; targetLength: number };
-};
 
 import { accumulateUsage, updateUsage } from 'src/services/api/claude.js';
 import type { NonNullableUsage } from 'src/services/api/logging.js';

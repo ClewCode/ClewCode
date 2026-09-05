@@ -223,10 +223,6 @@ export class ToolGateway {
       return { action: 'allow' };
     }
 
-    if (toolName.startsWith('eval.')) {
-      return { action: 'allow' };
-    }
-
     return {
       action: 'deny',
       reason: `Tool '${toolName}' is not recognized or integrated into the Tool Gateway.`,

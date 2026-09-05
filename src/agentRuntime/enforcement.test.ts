@@ -77,6 +77,20 @@ describe('network permission enforcement', () => {
   });
 });
 
+describe('tool gateway contract', () => {
+  test('unimplemented eval tools are denied instead of authorized then failing during execution', async () => {
+    const gateway = new ToolGateway(new RunStore(root), root);
+    const agent = {
+      ...BUILTIN_AGENTS['coder']!,
+      tools: [...BUILTIN_AGENTS['coder']!.tools, 'eval.score'],
+    };
+
+    const decision = await gateway.authorize('run-x', agent, 'eval.score', {});
+
+    expect(decision.action).toBe('deny');
+  });
+});
+
 describe('byte budgets', () => {
   test('repo.patch exceeding maxPatchBytes throws before writing', async () => {
     const store = new RunStore(root);

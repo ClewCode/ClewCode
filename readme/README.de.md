@@ -53,7 +53,6 @@ Hauptfunktionen:
 * **Code-Review-Tools** — `/code-review --fix` zum Prüfen und Anwenden von Änderungen, `/simplify` zum Bereinigen
 * **Guardian Auto-Review** — `/guardian` leitet Berechtigungsanfragen an einen LLM-Reviewer mit Schutzschalter weiter
 * **PR-Verwaltung** — `/pr create`, `list`, `view`, `review`, `merge`, `status`
-* **Anbieterunabhängige Fernsteuerung** — `/remote` für WebSocket-basiertes CLI-Sharing
 * **Modellauswahl** — Globale oder sitzungsbezogene Modellauswahl
 * **Plugin-Marktplatz** — `skipLfs`-Unterstützung für Plugin-Quellen
 * **Lokale Recherche** — `/research <query>` für Recherche mit lokalem Web-Scraping

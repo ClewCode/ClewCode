@@ -24,28 +24,16 @@ const REF_PATTERN = /\[(?:Pasted text|Image|Video|\.\.\.Truncated text) #\d+(?: 
 function findSafeSplitPoint(text: string, position: number): number {
   if (position <= 0 || position >= text.length) return position;
 
-  // Check if position lands inside a [...] reference
-  const textBefore = text.slice(0, position);
-  const _textAfter = text.slice(position);
-
-  // Count opening brackets before position vs closing brackets
-  // If inside a ref, we'll see one more '[' than ']'
-  const _openBrackets = 0;
-  for (let i = textBefore.length - 1; i >= 0; i--) {
-    if (textBefore[i] === ']' && (i === 0 || textBefore[i - 1] !== ']' || textBefore[i - 3] === '.')) break;
-  }
-  // Simpler approach: find the last ref starting before position
+  // Find the last reference that overlaps the requested split point.
   REF_PATTERN.lastIndex = 0;
-  let _lastRefEnd = 0;
   let match: RegExpExecArray | null;
   while ((match = REF_PATTERN.exec(text)) !== null) {
     const refEnd = match.index + match[0].length;
-    if (refEnd <= position) {
-      _lastRefEnd = refEnd;
-    } else if (match.index < position && refEnd > position) {
+    if (match.index < position && refEnd > position) {
       // Position is INSIDE a reference — extend to end of ref
       return refEnd < text.length ? refEnd : position;
-    } else {
+    }
+    if (match.index >= position) {
       break; // Past position, no more refs
     }
   }

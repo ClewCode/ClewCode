@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import type { Message } from '../../../types/message.js';
 import { createMemoryEvictionStore, evictionStub } from './evictionStore.js';
 import type { ContextPressure as Pressure } from './ledger.js';
-import { computeLimits, selectBuffer } from './limits.js';
+import { computeLimits } from './limits.js';
 import { applyPlan, planCompaction } from './planner.js';
 import { dedupeReducer } from './reducers/dedupe.js';
 import { dropReducer } from './reducers/drop.js';
@@ -71,6 +71,14 @@ describe('planCompaction', () => {
   });
 });
 
+describe('production reducer registry', () => {
+  test('spends cheap deterministic reducers before summarization and drop', async () => {
+    const { REDUCERS } = await import('./planner.js');
+    expect(REDUCERS.map(r => r.name)).toEqual(['dedupe', 'stale-tool', 'summarize', 'drop']);
+    expect(REDUCERS.map(r => r.loss)).toEqual([0.05, 0.2, 0.6, 0.95]);
+  });
+});
+
 describe('applyPlan', () => {
   const pressure = makePressure(150_000, 30_000);
 
@@ -118,10 +126,6 @@ describe('limits', () => {
     // renders red the instant it appears.
     expect(limits.warn).toBeLessThan(limits.critical);
     expect(limits.limit).toBeLessThan(limits.window);
-  });
-
-  test('a more compressible session gets a smaller buffer', () => {
-    expect(selectBuffer(1)).toBeLessThan(selectBuffer(0));
   });
 });
 

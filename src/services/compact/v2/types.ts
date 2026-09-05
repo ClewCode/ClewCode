@@ -1,5 +1,5 @@
-/**
- * Auto-compact v2 — the one shape every context-reduction mechanism takes.
+﻿/**
+ * Auto-compact v2 â€” the one shape every context-reduction mechanism takes.
  *
  * Before this, each mechanism had its own trigger, its own threshold, its own
  * return type and its own call site in query.ts. A planner cannot compare
@@ -38,7 +38,7 @@ export interface CompactSessionState {
   evictions: EvictionStore;
   /** Tokens restored this turn, to bound ContextRestore abuse. */
   restoredThisTurn: number;
-  /** Per-agent health tracking — replaces the module-scoped singleton. */
+  /** Per-agent health tracking â€” replaces the module-scoped singleton. */
   health: CompactHealth;
 }
 
@@ -77,7 +77,7 @@ export interface Reducer {
   readonly costly: boolean;
   /**
    * Upper bound on tokens this could free, without doing the work.
-   * Must be fast and free of side effects — the planner calls every reducer's
+   * Must be fast and free of side effects â€” the planner calls every reducer's
    * estimate on every turn that has any deficit.
    */
   estimate(ctx: ReduceContext): number;

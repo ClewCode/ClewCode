@@ -53,7 +53,6 @@ Principais recursos:
 * **Ferramentas de revisão de código** — Use `/code-review --fix` para verificar e aplicar alterações, `/simplify` para limpar código
 * **Revisão automática Guardian** — `/guardian` roteia solicitações de permissão para um revisor LLM com disjuntor
 * **Gerenciamento de PR** — `/pr create`, `list`, `view`, `review`, `merge`, `status`
-* **Controle remoto independente de provedor** — `/remote` para compartilhamento CLI via WebSocket
 * **Seletor de modelos** — Seleção de modelo global ou apenas para a sessão
 * **Mercado de plugins** — Suporte `skipLfs` para fontes de plugins
 * **Pesquisa local** — Use `/research <query>` para pesquisa com scraping web local

@@ -97,7 +97,7 @@ function memoryFilePath(key: string): string {
 
 // ── Frontmatter helpers ──────────────────────────────────────
 
-function parseMemoryFile(raw: string, keyFallback: string): MemoryRecord | null {
+function parseMemoryFile(raw: string): MemoryRecord | null {
   const FM_REGEX = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/;
   const match = raw.match(FM_REGEX);
   if (!match) return null;
@@ -183,7 +183,7 @@ function readAllRecords(): Array<{ record: MemoryRecord; key: string; hash: stri
       const key = keyMatch ? keyMatch[1].trim().replace(/^["']|["']$/g, '') : entry.replace(/\.md$/, '');
       const hashMatch = raw.match(/^content_hash:\s*(.+)$/m);
       const hash = hashMatch ? hashMatch[1].trim() : simpleHash(raw);
-      const rec = parseMemoryFile(raw, key);
+      const rec = parseMemoryFile(raw);
       if (!rec) continue;
       out.push({ record: rec, key, hash, filePath });
     } catch {
@@ -347,7 +347,7 @@ export class MemoryDB {
     if (!existsSync(fp)) return null;
     try {
       const raw = readFileSync(fp, 'utf8');
-      const rec = parseMemoryFile(raw, key);
+      const rec = parseMemoryFile(raw);
       return rec;
     } catch {
       return null;
@@ -370,10 +370,10 @@ export class MemoryDB {
         const hashMatch = raw.match(/^content_hash:\s*(.+)$/m);
         const oldHash = hashMatch ? hashMatch[1].trim() : '';
         if (oldHash === newHash) {
-          const rec = parseMemoryFile(raw, opts.key);
+          const rec = parseMemoryFile(raw);
           return { id: rec ? rec.id : opts.key, action: 'unchanged' };
         }
-        const existing = parseMemoryFile(raw, opts.key);
+        const existing = parseMemoryFile(raw);
         const id = existing?.id ?? generateId();
         const record: MemoryRecord = {
           id,

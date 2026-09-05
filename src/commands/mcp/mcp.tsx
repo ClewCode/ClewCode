@@ -7,8 +7,6 @@ import { useAppState } from '../../state/AppState.js';
 import type { LocalJSXCommandOnDone } from '../../types/command.js';
 import { PluginSettings } from '../plugin/PluginSettings.js';
 
-// TODO: This is a hack to get the context value from toggleMcpServer (useContext only works in a component)
-// Ideally, all MCP state and functions would be in global state.
 function MCPToggle({
   action,
   target,
@@ -42,15 +40,20 @@ function MCPToggle({
       return;
     }
 
-    for (const s of toToggle) {
-      void toggleMcpServer(s.name);
-    }
+    void Promise.allSettled(toToggle.map(server => toggleMcpServer(server.name))).then(results => {
+      const failed = results.flatMap((result, index) => (result.status === 'rejected' ? [toToggle[index]!.name] : []));
 
-    onComplete(
-      target === 'all'
-        ? `${isEnabling ? 'Enabled' : 'Disabled'} ${toToggle.length} MCP server(s)`
-        : `MCP server "${target}" ${isEnabling ? 'enabled' : 'disabled'}`,
-    );
+      if (failed.length > 0) {
+        onComplete(`Failed to ${action} ${failed.length} MCP server(s): ${failed.join(', ')}`);
+        return;
+      }
+
+      onComplete(
+        target === 'all'
+          ? `${isEnabling ? 'Enabled' : 'Disabled'} ${toToggle.length} MCP server(s)`
+          : `MCP server "${target}" ${isEnabling ? 'enabled' : 'disabled'}`,
+      );
+    });
   }, [action, target, mcpClients, toggleMcpServer, onComplete]);
 
   return null;

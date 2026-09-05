@@ -6,6 +6,11 @@ All notable changes to this project will be documented in this file.
 
 ### Removed
 
+- Removed inactive Auto-Compact v2 reducer implementations and stale reducer type names with no active planner path/caller (`state-compress`, `scored-tool`, `intelligent-prune`, plus already-removed `snip`/`ast-skeleton` compatibility names). The runtime contract is now exactly `dedupe -> stale-tool -> summarize -> drop`.
+- Removed legacy SSH abstraction helpers/tests (`LocalOs`, `RemoteOs`, `SshOs`, `remotePath`) that were no longer used by the live `clew ssh` session path (`createSSHSession` / `SSHSessionManager`).
+- Removed superseded agent-tree durability/refinement surfaces (`durableMessageQueue`, `retainedArtifacts`, `selfRefinement`) now replaced by the active `agentRuntime/tree`, artifacts, and refinement implementations.
+- Removed dead Agent config provider/permission picker implementations and the stale `/agent-config all` help text; provider and permission remain available through their explicit subcommands.
+- Removed the unreachable legacy `_compactViaReactive` manual-compaction path and its `REACTIVE_COMPACT` loader, plus several unused runtime-only type/constant remnants.
 - Deleted dead memory compatibility surface with zero callers: `src/memory/store.ts` (`getSource`/`upsertSource`/`deleteSource`/`insertChunks`/`getAllSources`/`searchChunksFTS`/`scanMarkdownFiles`, some of which were misleading no-ops) and `src/memory/migrateLegacy.ts` (`migrateFromSessionDB` always returned zeros); `/memory init` no longer runs the fake migration flow.
 - Removed the misleading no-op `MemoryDB.db` SQLite-compat getter; collapsed the duplicated init branches and clarified filesystem naming in `MemoryDB.init`/`getMemoryDbPath` docs.
 - Removed the stale `re-expose any MCP tools` TODOs in `src/entrypoints/mcp.ts`: the MCP server entrypoint exposes only built-in tools by design (no MCP tool proxying).
@@ -17,6 +22,14 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- Fixed `/providers key <provider> <key>` session-only mode reporting success without applying the key; session keys now take effect immediately, and `--global` / `-g` flags are stripped before key parsing so flags can never be persisted as part of a credential.
+- Fixed provider picker session/global isolation: session-only provider/model/providerConfig changes no longer rewrite shared `provider.json`.
+- Fixed Azure OpenAI configuration so the endpoint and API key are separate inputs/contracts; the endpoint is stored as provider metadata, while credentials use `AZURE_OPENAI_API_KEY` (with compatibility fallbacks). Removed the non-functional Google Vertex option from the generic Google picker because `GoogleProvider` did not consume its project/Vertex settings.
+- Fixed stale async UI updates in `SessionPreview`, `useDynamicConfig`, and provider model loading by ignoring completions after dependency changes/unmount.
+- Fixed IDE diff cleanup lifecycle: typed abort/before-exit wrappers replace the suppressed async listener mismatch, and success/reject/error paths await tab cleanup instead of fire-and-forget closing.
+- Fixed `/mcp enable|disable` to wait for all async toggles and report rejected servers instead of announcing success before reconnect/cache operations finish.
+- Fixed `ToolGateway` authorizing arbitrary `eval.*` tools that had no execution implementation; unknown tools now fail closed before dispatch.
+- Fixed Windows Bash snapshot fallback so a hung snapshot actually times out after the grace period instead of awaiting the same hung promise inside its timeout callback; no-snapshot execution now keeps valid shell spawn args.
 - Fixed `ToolGateway` workspace escape: `startsWith(root)` allowed `<root>-evil/...` siblings; now requires a full segment boundary plus `realpath` symlink confinement (case-insensitive on win32/darwin).
 - Implemented missing `src/server/parseConnectUrl.ts` (`cc://` deep links; clear error for `cc+unix://`) and removed the now-unneeded `@ts-expect-error` suppressions in `main.tsx`.
 - Added the six missing built-in agents (`researcher`, `collector`, `extractor`, `synthesizer`, `reporter`, `verifier`), fixed `planner.handoff_to`, and added a builtin topology integrity test so workflows can no longer name agents that don't exist.
@@ -80,7 +93,6 @@ All notable changes to this project will be documented in this file.
 - **Shell task UI:** Animated braille spinner in `ShellProgress` for running tasks; `BackgroundTaskStatus` uses `useAnimationFrame` for shell pill spinner; `BackgroundTasksDialog` uses `useInput` for `x`/`f` shortcuts so they fire even when focus is lost; `ShellDetailDialog` adds `useInput` for `space`/`left`/`c`/`x` shortcuts.
 - **Shell stdin hang fix:** `exec()` now closes `stdin` immediately after spawning so child processes don't hang waiting for EOF (`src/utils/Shell.ts`).
 
-## [Unreleased]
 
 ## [0.9.5] - 2026-09-02
 
@@ -190,7 +202,6 @@ All notable changes to this project will be documented in this file.
 - **Removed the project rules system**: Deleted the `ProjectRule` tool (`src/tools/ProjectRuleTool/`), `/rule` slash command (`src/commands/rule/`), `.clew/rules.json` loading util (`src/utils/projectRules.ts`), its system-prompt section, startup chat notification, and footer rule-count indicator. Clew Code no longer reads or writes `.clew/rules.json`.
 - **Unified provider model discovery**: The provider setup wizard now uses the same registry-aware live model fetcher and response parser as `/model`, so providers with nonstandard catalog URLs (including Cline) show the same current model list instead of stale static entries.
 
-## [Unreleased]
 
 ## [0.8.7] - 2026-08-27
 

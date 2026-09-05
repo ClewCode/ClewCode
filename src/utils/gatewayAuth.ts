@@ -5,13 +5,14 @@
  * instead of Anthropic's OAuth flow.
  */
 
-import { readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { openBrowser } from './browser.js';
+import { normalizeGatewayBaseUrl } from './gatewayUrl.js';
 
-const GATEWAY_URL = process.env.CLEW_GATEWAY_URL || 'https://api.clew-code.org/v1';
+const GATEWAY_URL = normalizeGatewayBaseUrl(process.env.CLEW_GATEWAY_URL);
 
 export type GatewayAuthResult = {
   token: string;
@@ -50,15 +51,17 @@ export async function signup(email: string, password: string): Promise<GatewayAu
  * Save gateway credentials to config file.
  */
 export async function saveGatewayToken(token: string, user: GatewayAuthResult['user']): Promise<void> {
-  const configPath = join(homedir(), '.clew', 'gateway.json');
-  await writeFile(configPath, JSON.stringify({ token, user }, null, 2));
+  const configDir = join(homedir(), '.clew');
+  const configPath = join(configDir, 'gateway.json');
+  await mkdir(configDir, { recursive: true });
+  await writeFile(configPath, JSON.stringify({ token, user }, null, 2), { mode: 0o600 });
 }
 
 /**
  * Import a token obtained from the web dashboard.
  */
 export async function importToken(token: string): Promise<GatewayAuthResult> {
-  const res = await fetch(`${GATEWAY_URL}/auth/me`, {
+  const res = await fetch(`${GATEWAY_URL}/v1/auth/me`, {
     headers: { Authorization: 'Bearer ' + token },
   });
   if (!res.ok) throw new Error('Invalid or expired token');
@@ -135,32 +138,42 @@ catch(err){document.getElementById('form').style.display='block';document.getEle
 
   return new Promise<void>((resolve, reject) => {
     const server = createServer(async (req, res) => {
-      const _url = new URL(req.url || '/', `http://localhost`);
-      const parsedUrl = new URL(req.url || '/', `http://localhost`);
+      try {
+        const parsedUrl = new URL(req.url || '/', `http://localhost`);
 
-      if (parsedUrl.pathname === '/callback') {
-        const token = parsedUrl.searchParams.get('token');
-        const email = parsedUrl.searchParams.get('email') || 'unknown';
-        const tier = parsedUrl.searchParams.get('tier') || 'free';
+        if (parsedUrl.pathname === '/callback') {
+          const token = parsedUrl.searchParams.get('token');
+          const email = parsedUrl.searchParams.get('email') || 'unknown';
+          const tier = parsedUrl.searchParams.get('tier') || 'free';
 
-        if (token) {
-          await saveGatewayToken(token, { id: 'web', email, tier });
-          res.writeHead(200, { 'Content-Type': 'text/html' });
-          res.end(`<html><body style="background:#0a0a0f;color:#e4e4e7;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:system-ui;margin:0">
+          if (token) {
+            await saveGatewayToken(token, { id: 'web', email, tier });
+            res.writeHead(200, { 'Content-Type': 'text/html' });
+            res.end(`<html><body style="background:#0a0a0f;color:#e4e4e7;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:system-ui;margin:0">
 <div style="text-align:center"><h1 style="color:#22c55e">&#10003;</h1><p>CLI login successful!<br><span style="color:#a1a1aa;font-size:.85rem">Logged in as ${email} (${tier})</span></p></div></body></html>`);
-          server.close();
-          process.stdout.write(`\nLogged in as ${email} (${tier})\n`);
-          resolve();
-        } else {
-          res.writeHead(400, { 'Content-Type': 'text/plain' });
-          res.end('Missing token');
+            server.close();
+            process.stdout.write(`\nLogged in as ${email} (${tier})\n`);
+            resolve();
+          } else {
+            res.writeHead(400, { 'Content-Type': 'text/plain' });
+            res.end('Missing token');
+          }
+          return;
         }
-        return;
-      }
 
-      res.writeHead(200, { 'Content-Type': 'text/html' });
-      res.end(html);
+        res.writeHead(200, { 'Content-Type': 'text/html' });
+        res.end(html);
+      } catch (error) {
+        if (!res.headersSent) {
+          res.writeHead(500, { 'Content-Type': 'text/plain' });
+        }
+        res.end('Gateway login failed');
+        server.close();
+        reject(error);
+      }
     });
+
+    server.once('error', reject);
 
     server.listen(0, '127.0.0.1', () => {
       const port = (server.address() as any).port;

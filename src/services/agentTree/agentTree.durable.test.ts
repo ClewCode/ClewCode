@@ -20,13 +20,6 @@ import {
   resetAgentLedgerForTests,
   setLedgerHomeOverrideForTests,
 } from './agentTokenLedger.js';
-import { drainInbox, enqueue, inboxDepth, setQueueHomeOverrideForTests } from './durableMessageQueue.js';
-import {
-  listRetainedArtifacts,
-  recallArtifact,
-  retainArtifact,
-  setArtifactHomeOverrideForTests,
-} from './retainedArtifacts.js';
 
 let root: string;
 
@@ -34,16 +27,12 @@ beforeEach(() => {
   root = mkdtempSync(join(tmpdir(), 'agenttree-'));
   setAgentTreeHomeOverrideForTests(root);
   setLedgerHomeOverrideForTests(root);
-  setQueueHomeOverrideForTests(root);
-  setArtifactHomeOverrideForTests({ sessionId: 'sess-1', base: root });
 });
 
 afterEach(() => {
   resetAgentLedgerForTests();
   setAgentTreeHomeOverrideForTests();
   setLedgerHomeOverrideForTests();
-  setQueueHomeOverrideForTests();
-  setArtifactHomeOverrideForTests();
 });
 
 describe('registry — durable session tree', () => {
@@ -105,36 +94,5 @@ describe('ledger — rooted token accounting', () => {
     const report = formatAgentTokenReport();
     expect(report.indexOf('pricey')).toBeLessThan(report.indexOf('cheap'));
     expect(report).toContain('$0.9000');
-  });
-});
-
-describe('queue — durable messages', () => {
-  test('enqueue → depth → drain acks exactly once', () => {
-    enqueue('worker-1', 'main', 'first');
-    enqueue('worker-1', 'main', 'second');
-    expect(inboxDepth('worker-1')).toBe(2);
-    expect(drainInbox('worker-1').map(m => m.text)).toEqual(['first', 'second']);
-    expect(drainInbox('worker-1')).toEqual([]);
-  });
-
-  test('survives restart simulation', () => {
-    enqueue('latch', 'peer', 'pre-shutdown');
-    setQueueHomeOverrideForTests(root);
-    expect(inboxDepth('latch')).toBe(1);
-    expect(drainInbox('latch')[0]?.text).toBe('pre-shutdown');
-  });
-
-  test('drain on unknown agent is empty', () => {
-    expect(drainInbox('nobody')).toEqual([]);
-  });
-});
-
-describe('retainedArtifacts', () => {
-  test('retain → stub → recall round-trip', () => {
-    const { record, stub } = retainArtifact('big tool output', 'x'.repeat(200));
-    expect(record.handle).toMatch(/^ev_/);
-    expect(stub).toContain('recall with restoreArtifact');
-    expect(recallArtifact(record.handle)?.content).toBe('x'.repeat(200));
-    expect(listRetainedArtifacts().map(r => r.label)).toContain('big tool output');
   });
 });

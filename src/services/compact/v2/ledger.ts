@@ -13,7 +13,7 @@
  */
 import type { Message } from '../../../types/message.js';
 import { tokenCountWithEstimation } from '../../../utils/tokens.js';
-import { type ContextLimits, computeLimits, DEFAULT_BUFFER_TOKENS } from './limits.js';
+import { type ContextLimits, computeLimits } from './limits.js';
 
 export interface ContextPressure {
   /** Tokens the next request will actually cost. */
@@ -31,7 +31,7 @@ export interface ContextPressure {
 }
 
 export interface ContextLedger {
-  measure(messages: readonly Message[], model: string, buffer?: number): ContextPressure;
+  measure(messages: readonly Message[], model: string): ContextPressure;
   /** Report tokens reclaimed by a reducer this turn. */
   applyDelta(tokens: number): void;
   /** Total reclaimed but not yet visible in the anchor message's usage. */
@@ -44,8 +44,8 @@ export function createContextLedger(): ContextLedger {
   let freed = 0;
 
   return {
-    measure(messages, model, buffer = DEFAULT_BUFFER_TOKENS) {
-      const limits = computeLimits(model, buffer);
+    measure(messages, model) {
+      const limits = computeLimits(model);
       const raw = tokenCountWithEstimation(messages);
       const used = Math.max(0, raw - freed);
       return {

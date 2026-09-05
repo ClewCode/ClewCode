@@ -30,17 +30,3 @@ export interface NodeAccountingSummary {
   subtreeMetrics: TokenUsageMetrics;
   children: NodeAccountingSummary[];
 }
-
-export interface CircuitBreakerConfig {
-  maxDepth: number;
-  maxChildrenPerAgent: number;
-  maxSubtreeTokens: number;
-  maxSubtreeCostUsd: number;
-}
-
-export const DEFAULT_CIRCUIT_BREAKER_CONFIG: CircuitBreakerConfig = {
-  maxDepth: 3,
-  maxChildrenPerAgent: 5,
-  maxSubtreeTokens: 5_000_000, // 5M tokens cap per subtree
-  maxSubtreeCostUsd: 15.0, // $15 max per subtree
-};

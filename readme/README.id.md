@@ -53,7 +53,6 @@ Fitur utama:
 * **Alat tinjauan kode** — Gunakan `/code-review --fix` untuk memeriksa dan menerapkan perubahan, `/simplify` untuk membersihkan kode
 * **Tinjauan otomatis Guardian** — `/guardian` merutekan permintaan izin ke peninjau LLM dengan pemutus sirkuit
 * **Manajemen PR** — `/pr create`, `list`, `view`, `review`, `merge`, `status`
-* **Kontrol jarak jauh independen penyedia** — `/remote` untuk berbagi CLI berbasis WebSocket
 * **Pemilih model** — Pemilihan model global atau khusus sesi
 * **Pasar plugin** — Dukungan `skipLfs` untuk sumber plugin
 * **Riset lokal** — Gunakan `/research <query>` untuk riset dengan scraping web lokal

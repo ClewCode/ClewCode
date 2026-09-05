@@ -217,10 +217,15 @@ function isSessionPlanFile(absolutePath: string): boolean {
   // Check if path is a plan file for this session (main or agent-specific)
   // Main plan file: {plansDir}/{planSlug}.md
   // Agent plan file: {plansDir}/{planSlug}-agent-{agentId}.md
-  const expectedPrefix = join(getPlansDirectory(), getPlanSlug());
-  // SECURITY: Normalize to prevent path traversal bypasses via .. segments
-  const normalizedPath = normalize(absolutePath);
-  return normalizedPath.startsWith(expectedPrefix) && normalizedPath.endsWith('.md');
+  const expectedPrefix = normalizeCaseForComparison(normalize(join(getPlansDirectory(), getPlanSlug())));
+  // SECURITY: Normalize path and case, then require the filename boundary.
+  // A bare startsWith(prefix) would let slug `plan-a` auto-allow unrelated
+  // files such as `plan-admin.md`.
+  const normalizedPath = normalizeCaseForComparison(normalize(absolutePath));
+  return (
+    normalizedPath === `${expectedPrefix}.md` ||
+    (normalizedPath.startsWith(`${expectedPrefix}-agent-`) && normalizedPath.endsWith('.md'))
+  );
 }
 
 /**

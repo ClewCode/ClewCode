@@ -43,32 +43,8 @@ function getProjectTasteDir(): string {
 function getGlobalTasteDir(): string {
   return join(homedir(), DOT_CLEW, TASTE_DIR);
 }
-function getProjectRulesDir(): string {
-  return join(getProjectTasteDir(), 'rules');
-}
-function getGlobalRulesDir(): string {
-  return join(getGlobalTasteDir(), 'rules');
-}
-function getEvidenceDir(): string {
-  return join(getProjectTasteDir(), 'evidence');
-}
-function getConflictsDir(): string {
-  return join(getProjectTasteDir(), 'conflicts');
-}
-
 function ensureDir(p: string): void {
   if (!existsSync(p)) mkdirSync(p, { recursive: true });
-}
-
-function ruleFilePath(id: string, scopeType: 'global' | 'project'): string {
-  const dir = scopeType === 'global' ? getGlobalRulesDir() : getProjectRulesDir();
-  return join(dir, `${sanitizeId(id)}.md`);
-}
-function evidenceFilePath(id: string): string {
-  return join(getEvidenceDir(), `${sanitizeId(id)}.md`);
-}
-function conflictFilePath(id: string): string {
-  return join(getConflictsDir(), `${sanitizeId(id)}.md`);
 }
 
 function stringifyRule(rule: TasteRule): string {

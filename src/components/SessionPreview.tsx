@@ -26,10 +26,16 @@ export function SessionPreview({ log, onExit, onSelect }: Props): React.ReactNod
 
   // Load full messages if this is a lite log
   React.useEffect(() => {
+    let cancelled = false;
     setFullLog(null);
     if (isLiteLog(log)) {
-      void loadFullLog(log).then(setFullLog);
+      void loadFullLog(log).then(loadedLog => {
+        if (!cancelled) setFullLog(loadedLog);
+      });
     }
+    return () => {
+      cancelled = true;
+    };
   }, [log]);
 
   const isLoading = isLiteLog(log) && fullLog === null;

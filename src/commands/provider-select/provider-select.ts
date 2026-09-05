@@ -23,7 +23,7 @@ import {
 } from '../../services/ai/providerRegistry.js';
 import { validateProviderModelSelection } from '../../services/ai/providerSelection.js';
 import { hasAntigravityOAuthCreds } from '../../services/ai/providers/CodeAssistProvider.js';
-import { useAppState, useSetAppState } from '../../state/AppState.js';
+import { useSetAppState } from '../../state/AppState.js';
 import type {
   LocalCommandResult,
   LocalJSXCommandCall,
@@ -220,7 +220,20 @@ function applyProviderSelectionToSession(
   setMessages?.(stripSignatureBlocks);
 }
 
-async function runProviderCommand(args: string): Promise<ProviderCommandRunResult> {
+export function parseProviderKeyCommandArgs(modelParts: string[]): {
+  isGlobal: boolean;
+  apiKey: string;
+  setParts: string[];
+} {
+  const isGlobal = modelParts.includes('--global') || modelParts.includes('-g');
+  const keyCommandParts = modelParts.filter(part => part !== '--global' && part !== '-g');
+  const setIndex = keyCommandParts.findIndex(part => part.toLowerCase() === 'set');
+  const apiKeyParts = setIndex === -1 ? keyCommandParts : keyCommandParts.slice(0, setIndex);
+  const setParts = setIndex === -1 ? [] : keyCommandParts.slice(setIndex + 1);
+  return { isGlobal, apiKey: apiKeyParts.join(' '), setParts };
+}
+
+export async function runProviderCommand(args: string): Promise<ProviderCommandRunResult> {
   const parts = args.trim() ? args.trim().split(/\s+/) : [];
   const [subcommand = 'get', providerArg, ...modelParts] = parts;
   const command = subcommand.toLowerCase();
@@ -262,9 +275,7 @@ async function runProviderCommand(args: string): Promise<ProviderCommandRunResul
         },
       };
     }
-    const setIndex = modelParts.findIndex(part => part.toLowerCase() === 'set');
-    const apiKeyParts = setIndex === -1 ? modelParts : modelParts.slice(0, setIndex);
-    const apiKey = apiKeyParts.join(' ');
+    const { isGlobal, apiKey, setParts } = parseProviderKeyCommandArgs(modelParts);
     if (!apiKey) {
       return {
         result: {
@@ -273,7 +284,6 @@ async function runProviderCommand(args: string): Promise<ProviderCommandRunResul
         },
       };
     }
-    const setParts = setIndex === -1 ? [] : modelParts.slice(setIndex + 1);
     const setProvider = resolveProviderKey(setParts[0]);
     const setModel = setParts.slice(1).join(' ');
     if (setParts.length > 0 && !setProvider) {
@@ -285,7 +295,6 @@ async function runProviderCommand(args: string): Promise<ProviderCommandRunResul
       };
     }
 
-    const isGlobal = modelParts.includes('--global') || modelParts.includes('-g');
     const currentConfig = await loadConfig();
     const nextProvider = (setProvider ?? currentConfig?.provider ?? provider) as ProviderKey;
     const nextModel =
@@ -307,6 +316,8 @@ async function runProviderCommand(args: string): Promise<ProviderCommandRunResul
 
     if (isGlobal) {
       await saveConfig(nextConfig);
+    } else if (!setProvider) {
+      ProviderManager.getInstance().setSessionApiKeys({ [provider]: apiKey });
     }
 
     clearProviderModelsCache(nextProvider);
@@ -479,6 +490,8 @@ function ProviderPicker({
   const [modelOptions, setModelOptions] = React.useState<ProviderModelInfo[] | null>(null);
   const [keyConfirmed, setKeyConfirmed] = React.useState(false);
   const [apiKeyInput, setApiKeyInput] = React.useState('');
+  const [azureEndpointInput, setAzureEndpointInput] = React.useState('');
+  const [azureEndpointConfirmed, setAzureEndpointConfirmed] = React.useState(false);
   const [apiKeyCursorOffset, setApiKeyCursorOffset] = React.useState(0);
   const [apiKeyError, setApiKeyError] = React.useState<string | null>(null);
   const [config, setConfig] = React.useState<ProviderConfig | null>(null);
@@ -498,14 +511,29 @@ function ProviderPicker({
   const [customStep, setCustomStep] = React.useState<'name' | 'baseUrl' | 'apiKey' | 'model' | null>(null);
   const [customCursorOffset, setCustomCursorOffset] = React.useState(0);
   const setAppState = useSetAppState();
-  const currentSessionModel = useAppState(s => (s.mainLoopModelForSession || s.mainLoopModel) as string | null);
 
   const info = provider ? getProviderInfo(provider) : null;
-  const hasExistingKey =
-    provider && info ? Boolean(config?.apiKeys?.[provider] || (info.envKey ? process.env[info.envKey] : false)) : false;
+  const isAzureOpenAI = provider === 'openai' && openaiType === 'azure';
+  const configuredApiKey = provider ? config?.apiKeys?.[provider] : undefined;
+  const envApiKey = isAzureOpenAI
+    ? process.env.AZURE_OPENAI_API_KEY || process.env.AZURE_API_KEY || process.env.OPENAI_API_KEY
+    : info?.envKey
+      ? process.env[info.envKey]
+      : undefined;
+  const credentialEnvKey = isAzureOpenAI ? 'AZURE_OPENAI_API_KEY' : info?.envKey;
+  const configuredAzureEndpoint =
+    config?.provider === 'openai' && (config.providerConfig as any)?.openaiType === 'azure'
+      ? ((config.providerConfig as any)?.baseUrl as string | undefined)
+      : undefined;
+  const azureEndpoint = azureEndpointInput.trim() || configuredAzureEndpoint || process.env.AZURE_OPENAI_ENDPOINT || '';
+  const needsAzureEndpoint =
+    isAzureOpenAI && !configuredAzureEndpoint && !process.env.AZURE_OPENAI_ENDPOINT && !azureEndpointConfirmed;
+  const hasExistingKey = provider && info ? Boolean(configuredApiKey || envApiKey) : false;
 
   React.useEffect(() => {
+    let cancelled = false;
     void loadConfig().then(loadedConfig => {
+      if (cancelled) return;
       setConfig(loadedConfig);
       if (loadedConfig?.provider === 'google' && (loadedConfig.providerConfig as any)?.googleType) {
         const type = (loadedConfig.providerConfig as any).googleType;
@@ -516,6 +544,9 @@ function ProviderPicker({
         setOpenaiType(type === 'azure' ? 'azure' : 'direct');
       }
     });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   React.useEffect(() => {
@@ -526,25 +557,41 @@ function ProviderPicker({
     setModelOptions(null);
     setSelectedModel(null);
 
-    const effectiveApiKey =
-      apiKeyInput.trim() || config?.apiKeys?.[provider] || (info?.envKey ? process.env[info.envKey] : undefined);
-    const baseUrl =
-      provider === 'openai' && openaiType === 'azure' && apiKeyInput.trim() ? apiKeyInput.trim() : undefined;
+    const effectiveApiKey = apiKeyInput.trim() || configuredApiKey || envApiKey;
+    const baseUrl = isAzureOpenAI ? azureEndpoint || undefined : undefined;
+    let cancelled = false;
 
     void fetchProviderModels(provider, {
       apiKey: effectiveApiKey,
       baseUrl,
       forceRefresh: true,
-    }).then(setModelOptions);
-  }, [provider, keyConfirmed, info?.isLocal, info?.envKey, openaiType]);
+    }).then(models => {
+      if (!cancelled) setModelOptions(models);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    provider,
+    keyConfirmed,
+    info?.isLocal,
+    info?.envKey,
+    openaiType,
+    apiKeyInput,
+    configuredApiKey,
+    envApiKey,
+    isAzureOpenAI,
+    azureEndpoint,
+  ]);
 
   async function saveProviderSelection(apiKey?: string, scope?: 'session' | 'global') {
     if (!provider || !selectedModel) return;
 
     const effectiveScope = scope ?? selectionScope ?? 'session';
     const trimmedApiKey = apiKey?.trim() || apiKeyInput.trim();
+    const existingConfig = await loadConfig();
     const nextApiKeys: ProviderConfig['apiKeys'] = {
-      ...(config?.apiKeys ?? {}),
+      ...(existingConfig?.apiKeys ?? {}),
       ...(trimmedApiKey ? { [provider]: trimmedApiKey } : {}),
     };
     if (provider === 'anthropic' && anthropicType === 'oauth') {
@@ -552,25 +599,22 @@ function ProviderPicker({
     }
 
     const info = getProviderInfo(provider);
-    const existingConfig = await loadConfig();
     const isGlobal = effectiveScope === 'global';
     const nextConfig: ProviderConfig = {
-      provider: isGlobal ? provider : existingConfig?.provider || provider,
-      model: isGlobal
-        ? selectedModel
-        : existingConfig?.model || (currentSessionModel as string) || info.defaultModel || '',
+      provider,
+      model: selectedModel,
       providerConfig: {
         ...getSerializableProviderInfo(provider),
         ...(provider === 'google' ? { googleType: googleType ?? 'direct' } : {}),
         ...(provider === 'openai' ? { openaiType: openaiType ?? 'direct' } : {}),
-        // Store the value from prompt if needed
-        ...(provider === 'openai' && openaiType === 'azure' && trimmedApiKey ? { baseUrl: trimmedApiKey } : {}),
-        ...(provider === 'google' && googleType === 'vertex' && trimmedApiKey ? { projectId: trimmedApiKey } : {}),
+        ...(isAzureOpenAI && azureEndpoint ? { baseUrl: azureEndpoint } : {}),
       } as any,
       apiKeys: nextApiKeys,
     };
 
-    await saveConfig(nextConfig);
+    if (isGlobal) {
+      await saveConfig(nextConfig);
+    }
     clearProviderModelsCache(provider);
 
     // Invalidate provider config cache to force reload
@@ -621,15 +665,6 @@ function ProviderPicker({
       description: 'Use GOOGLE_API_KEY',
       value: 'google:direct',
     },
-    {
-      providerId: 'google',
-      label: 'Google Vertex AI',
-      authType: 'vertex',
-      envKey: '',
-      isLocal: false,
-      description: 'GCP credentials',
-      value: 'google:vertex',
-    },
     // OpenAI variants
     {
       providerId: 'openai',
@@ -644,9 +679,9 @@ function ProviderPicker({
       providerId: 'openai',
       label: 'Azure OpenAI',
       authType: 'azure',
-      envKey: 'AZURE_API_KEY',
+      envKey: 'AZURE_OPENAI_API_KEY',
       isLocal: false,
-      description: 'Azure OpenAI endpoint',
+      description: 'Azure OpenAI endpoint + API key',
       value: 'openai:azure',
     },
   ];
@@ -781,7 +816,7 @@ function ProviderPicker({
             if (value === '__SECTION_RECENT__' || value === '__SECTION_PROVIDERS__') {
               return;
             }
-            // Parse expanded value (e.g. "google:vertex" -> provider=google, authType=vertex)
+            // Parse expanded value (e.g. "openai:azure" -> provider=openai, authType=azure)
             // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
             const expanded = expandedMap.get(value);
             if (expanded) {
@@ -801,6 +836,8 @@ function ProviderPicker({
               setProvider(value as ProviderKey);
             }
             setApiKeyInput('');
+            setAzureEndpointInput('');
+            setAzureEndpointConfirmed(false);
             setApiKeyCursorOffset(0);
             setApiKeyError(null);
             setSearchQuery('');
@@ -1026,8 +1063,7 @@ function ProviderPicker({
     );
   }
 
-  // Google/OpenAI auth types are now selected directly from the expanded provider list
-  // (e.g. "Google (API Key)", "Google Vertex AI", "OpenAI (API Key)", etc.)
+  // Provider auth types are selected directly from the expanded provider list.
   // No sub-menu needed here -- authType is set by the list selection handler above.
 
   if (provider === 'anthropic' && anthropicType === 'oauth' && !keyConfirmed) {
@@ -1166,6 +1202,59 @@ function ProviderPicker({
 
   const isLocalNoKey = Boolean(info?.isLocal && !info?.envKey);
 
+  if (needsAzureEndpoint) {
+    return React.createElement(
+      Box,
+      { flexDirection: 'column' },
+      React.createElement(
+        Text,
+        // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
+        { marginBottom: 1 },
+        'Enter Azure OpenAI Endpoint URL (e.g. https://res-name.openai.azure.com/)',
+      ),
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
+      apiKeyError ? React.createElement(Text, { color: 'error', marginBottom: 1 }, apiKeyError) : null,
+      React.createElement(TextInput, {
+        value: azureEndpointInput,
+        onChange: value => {
+          setAzureEndpointInput(value);
+          setApiKeyError(null);
+        },
+        onSubmit: value => {
+          const trimmed = value.trim();
+          try {
+            const url = new URL(trimmed);
+            if (url.protocol !== 'https:' && url.protocol !== 'http:') throw new Error('unsupported protocol');
+          } catch {
+            setApiKeyError('Enter a valid Azure OpenAI endpoint URL.');
+            return;
+          }
+          setAzureEndpointInput(trimmed);
+          setAzureEndpointConfirmed(true);
+          setApiKeyCursorOffset(0);
+          setApiKeyError(null);
+        },
+        onExit: () => {
+          setProvider(null);
+          setAzureEndpointInput('');
+          setAzureEndpointConfirmed(false);
+          setApiKeyCursorOffset(0);
+          setApiKeyError(null);
+          setOpenaiType(null);
+          setSearchQuery('');
+          setSearchCursorOffset(0);
+          setKeyConfirmed(false);
+        },
+        placeholder: 'https://res-name.openai.azure.com/',
+        focus: true,
+        showCursor: true,
+        columns: 80,
+        cursorOffset: apiKeyCursorOffset,
+        onChangeCursorOffset: setApiKeyCursorOffset,
+      }),
+    );
+  }
+
   // Show input field when: (no existing key) OR (user chose to change key)
   if (!isLocalNoKey && !keyConfirmed && ((!hasExistingKey && !info?.isLocal) || (showChangeKey && !info?.isLocal))) {
     return React.createElement(
@@ -1176,12 +1265,8 @@ function ProviderPicker({
         // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
         { marginBottom: 1 },
         showChangeKey
-          ? `Enter new ${info?.envKey} for ${info?.label}`
-          : googleType === 'vertex'
-            ? `Enter Google Cloud Project ID for Vertex AI (or press Enter to use GCLOUD_PROJECT env)`
-            : openaiType === 'azure'
-              ? `Enter Azure OpenAI Endpoint URL (e.g. https://res-name.openai.azure.com/)`
-              : `API key required for ${info?.label} (${info?.envKey})`,
+          ? `Enter new ${credentialEnvKey} for ${info?.label}`
+          : `API key required for ${info?.label} (${credentialEnvKey})`,
       ),
       // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       apiKeyError ? React.createElement(Text, { color: 'error', marginBottom: 1 }, apiKeyError) : null,
@@ -1193,10 +1278,8 @@ function ProviderPicker({
         },
         onSubmit: async value => {
           const trimmed = value.trim();
-          const needsKey = provider !== 'google' || googleType !== 'vertex';
-
-          if (!trimmed && needsKey && !process.env[info?.envKey ?? '']) {
-            setApiKeyError(`Enter ${info?.envKey} or cancel to go back.`);
+          if (!trimmed) {
+            setApiKeyError(`Enter ${credentialEnvKey} or cancel to go back.`);
             return;
           }
           setApiKeyInput(trimmed);
@@ -1207,6 +1290,8 @@ function ProviderPicker({
         onExit: () => {
           setProvider(null);
           setApiKeyInput('');
+          setAzureEndpointInput('');
+          setAzureEndpointConfirmed(false);
           setApiKeyCursorOffset(0);
           setApiKeyError(null);
           setShowChangeKey(false);
@@ -1217,7 +1302,7 @@ function ProviderPicker({
           setSearchCursorOffset(0);
           setKeyConfirmed(false);
         },
-        placeholder: `Paste ${info?.envKey}`,
+        placeholder: `Paste ${credentialEnvKey}`,
         mask: '*',
         focus: true,
         showCursor: true,
@@ -1234,18 +1319,18 @@ function ProviderPicker({
       Box,
       { flexDirection: 'column' },
       // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
-      React.createElement(Text, { marginBottom: 1 }, `${info?.label} has an API key configured (${info?.envKey})`),
+      React.createElement(Text, { marginBottom: 1 }, `${info?.label} has an API key configured (${credentialEnvKey})`),
       React.createElement(Select, {
         options: [
           {
             label: 'Use existing key',
             value: 'use_existing',
-            description: `Keep current ${info?.envKey}`,
+            description: `Keep current ${credentialEnvKey}`,
           },
           {
             label: 'Change key',
             value: 'change_key',
-            description: `Enter new ${info?.envKey}`,
+            description: `Enter new ${credentialEnvKey}`,
           },
         ],
         visibleOptionCount: 2,

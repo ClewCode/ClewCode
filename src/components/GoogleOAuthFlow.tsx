@@ -48,8 +48,6 @@ type OAuthStatus =
   | { state: 'success'; tokens: GoogleOAuthTokens }
   | { state: 'error'; message: string };
 
-const _PASTE_HERE_MSG = 'Paste authorization code here > ';
-
 function SelectMethod({
   onSelect,
   onCancel,
@@ -59,30 +57,36 @@ function SelectMethod({
   onCancel?: () => void;
   codeAssist?: boolean;
 }) {
+  const options = [
+    {
+      label: 'Google OAuth Web Login (Recommended)',
+      value: 'browser',
+      description: 'Complete login in your browser, secure callback automatic',
+    },
+    {
+      label: 'Manual Authorization URL (Headless / Remote)',
+      value: 'headless',
+      description: 'Open login page manually, paste authorization code',
+    },
+    ...(!codeAssist
+      ? [
+          {
+            label: 'Reconfigure Google OAuth Credentials',
+            value: 'reconfigure',
+            description: 'Change your custom Google Cloud Client ID and Secret',
+          },
+        ]
+      : []),
+  ];
+
   return (
     <Box flexDirection="column">
       <Box marginBottom={1}>
         <Text>Select Google OAuth login method:</Text>
       </Box>
       <Select
-        options={[
-          {
-            label: 'Google OAuth Web Login (Recommended)',
-            value: 'browser',
-            description: 'Complete login in your browser, secure callback automatic',
-          },
-          {
-            label: 'Manual Authorization URL (Headless / Remote)',
-            value: 'headless',
-            description: 'Open login page manually, paste authorization code',
-          },
-          {
-            label: 'Reconfigure Google OAuth Credentials',
-            value: 'reconfigure',
-            description: 'Change your custom Google Cloud Client ID and Secret',
-          },
-        ]}
-        visibleOptionCount={3}
+        options={options}
+        visibleOptionCount={options.length}
         onChange={value => onSelect(value as LoginMethod)}
         onCancel={onCancel}
       />
@@ -413,7 +417,7 @@ export function GoogleOAuthFlow({ onDone, onCancel, codeAssist }: Props): React.
 
   const startOAuthFlow = useCallback(
     async (method: LoginMethod, customClientId?: string, customClientSecret?: string) => {
-      if (method === 'reconfigure') {
+      if (method === 'reconfigure' && !codeAssist) {
         setOAuthStatus({
           state: 'configure_credentials',
           step: 'client_id',

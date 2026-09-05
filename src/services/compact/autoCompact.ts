@@ -153,7 +153,7 @@ export function resolveAdaptiveBuffer(): number {
 }
 
 export function getAutoCompactThreshold(model: string): number {
-  return computeLimits(model, resolveAdaptiveBuffer()).actNow;
+  return computeLimits(model).actNow;
 }
 
 export function calculateTokenWarningState(
@@ -166,7 +166,7 @@ export function calculateTokenWarningState(
   isAboveAutoCompactThreshold: boolean;
   isAtBlockingLimit: boolean;
 } {
-  const limits = computeLimits(model, resolveAdaptiveBuffer());
+  const limits = computeLimits(model);
   // When auto-compact is off there is no act threshold to warn against, so the
   // bands are measured off the full usable window instead.
   const threshold = isAutoCompactEnabled() ? limits.actNow : limits.limit;

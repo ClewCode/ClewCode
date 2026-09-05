@@ -8,14 +8,7 @@ import type { CanUseToolFn } from '../../hooks/useCanUseTool.js';
 import type { IDESelection } from '../../hooks/useIdeSelection.js';
 import type { SetToolJSXFn, ToolUseContext } from '../../Tool.js';
 import type { AgentDefinition } from '../../tools/AgentTool/loadAgentsDir.js';
-import type {
-  AssistantMessage,
-  AttachmentMessage,
-  Message,
-  ProgressMessage,
-  SystemMessage,
-  UserMessage,
-} from '../../types/message.js';
+import type { AttachmentMessage, Message } from '../../types/message.js';
 import type { PermissionMode } from '../../types/permissions.js';
 import { isValidImagePaste, type PromptInputMode } from '../../types/textInputTypes.js';
 import { type AgentMentionAttachment, createAttachmentMessage, getAttachmentMessages } from '../attachments.js';
@@ -39,7 +32,7 @@ import { processTextPrompt } from './processTextPrompt.js';
 export type ProcessUserInputContext = ToolUseContext & LocalJSXCommandContext;
 
 export type ProcessUserInputBaseResult = {
-  messages: (UserMessage | AssistantMessage | AttachmentMessage | SystemMessage | ProgressMessage)[];
+  messages: Message[];
   shouldQuery: boolean;
   allowedTools?: string[];
   model?: string;
@@ -202,31 +195,21 @@ export async function processUserInput({
       );
     }
 
-    // TODO: Clean this up
     if (hookResult.message) {
-      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
-      switch (hookResult.message.attachment.type) {
-        case 'hook_success':
-          // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
-          if (!hookResult.message.attachment.content) {
-            // Skip if there is no content
-            break;
-          }
+      const hookMessage = hookResult.message;
+      if (hookMessage.type === 'attachment' && hookMessage.attachment.type === 'hook_success') {
+        const content = hookMessage.attachment.content;
+        if (typeof content === 'string' && content) {
           result.messages.push({
-            ...hookResult.message,
-            // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
+            ...hookMessage,
             attachment: {
-              // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
-              ...hookResult.message.attachment,
-              // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
-              content: applyTruncation(hookResult.message.attachment.content),
+              ...hookMessage.attachment,
+              content: applyTruncation(content),
             },
           });
-          break;
-        default:
-          // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
-          result.messages.push(hookResult.message);
-          break;
+        }
+      } else {
+        result.messages.push(hookMessage);
       }
     }
   }
@@ -404,7 +387,6 @@ async function processUserInputBase(
         return {
           messages: [
             createUserMessage({ content: inputString, uuid }),
-            // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
             createCommandInputMessage(`<local-command-stdout>${msg}</local-command-stdout>`),
           ],
           shouldQuery: false,

@@ -1,103 +1,126 @@
-# Provider System
+﻿# Provider System
 
-How Clew Code selects, configures, and talks to AI providers.
+How Clew Code selects, scopes, configures, and calls AI providers.
 
 ## Architecture
 
+```text
+REPL / agents / background work
+        |
+        v
+ProviderManager + ScopedProviderContext
+        |
+        +--> providerRegistry.ts <- providers.json (catalog / defaults / capabilities)
+        |
+        +--> provider implementation
+              |-- Anthropic native path
+              |-- OpenAIProvider (OpenAI + Azure OpenAI)
+              |-- GoogleProvider (Gemini API-key endpoint)
+              `-- OpenAICompatibleProvider / dedicated adapters
+        |
+        v
+AnthropicAdapter / provider-specific protocol edge
+        |
+        v
+Clew Internal Protocol v1
 ```
-Clew core (claude.ts agent loop)
-  │  speaks Clew Internal Protocol v1
-  ▼
-UnifiedAIProviderClient  —  client.beta.messages.create(...)
-  │
-  ├─ anthropic  → native Anthropic SDK client (no adapter)
-  └─ everyone else
-       │
-       ProviderManager.createClient()
-       │   selection: session override → AI_PROVIDER → provider.json → legacy env → DEFAULT_PROVIDER
-       ▼
-       ProviderRegistry (built from providers.json)
-       │   provider classes: OpenAIProvider, GoogleProvider, OpenAICompatibleProvider, ...
-       ▼
-       AnthropicAdapter
-           converts requests/responses/stream events between the provider's
-           wire format and the Clew Internal Protocol
-```
 
-## Clew Internal Protocol v1
-
-The core speaks the **Anthropic Messages format** end to end. This is a
-deliberate, named decision — declared in `src/services/api/clewProtocol.ts` —
-not an accident of history:
-
-- `ClewProtocolRequest` = `BetaMessageStreamParams`
-- `ClewProtocolMessage` = `BetaMessage`
-- `ClewProtocolStreamEvent` = `BetaRawMessageStreamEvent`
-
-Providers with other wire formats (OpenAI-compatible, Gemini, ...) are
-converted at the system edge by adapters in `src/services/ai/adapter/`.
-Changing these shapes is a protocol version bump.
+The core uses the Anthropic Messages-shaped **Clew Internal Protocol v1**. Providers with different wire formats are converted at the provider boundary. Changing the internal request/message/stream shapes is a protocol change, not a provider-local refactor.
 
 ## Single source of truth
 
-`src/services/ai/providers.json` is the only provider/model catalog. It feeds:
+`src/services/ai/providers.json` is the provider/model catalog. It supplies provider IDs, labels, API-key env vars, base/model-list URLs, default models, capabilities, and prompt-cache metadata through `providerRegistry.ts`.
 
-- `providerRegistry.ts` → `PROVIDER_REGISTRY`, `PROVIDER_IDS`, capabilities,
-  default models, prompt-caching support
-- the `/providers` slash command (interactive picker)
-- the `clew provider` CLI (`src/commands/provider-select-cli.ts`)
-- dynamic model listing fallbacks (`providerModels.ts`)
+Do not create another static provider list. A provider that needs custom runtime behavior gets a dedicated implementation registered by `providerRegistry.ts`; ordinary OpenAI-compatible providers should stay registry-driven.
 
-Do **not** add hardcoded provider or model lists elsewhere. If a provider
-needs a dedicated client class, register it in `createProvider()` in
-`providerRegistry.ts`; anything OpenAI-compatible only needs a
-`providers.json` entry (`envKey` + `defaultBaseUrl`) and falls back to
-`OpenAICompatibleProvider` automatically.
+Live `/models` responses are normalized by `providerModels.ts` and cached. The registry remains the offline/failure fallback.
 
-`anthropic` is a first-class registry entry. Client creation still
-special-cases it in `src/services/api/client.ts` (native SDK client, no
-adapter), but selection, API-key resolution, model listing, and defaults all
-go through the registry like every other provider.
+## Scope and precedence
 
-## Configuration
+There are three different concepts and they must not be conflated:
 
-| Source | Precedence |
-|---|---|
-| Session override (`setSessionProvider` / `/providers set` without `--global`) | 1 (highest) |
-| `AI_PROVIDER` env var | 2 |
-| `<project>/.clew/provider.json`, else `~/.clew/provider.json` | 3 |
-| Legacy env (`CLAUDE_CODE_USE_BEDROCK` / `VERTEX` / `FOUNDRY` → anthropic) | 4 |
-| `DEFAULT_PROVIDER` (`openai`) | 5 |
+1. **Execution scope** — subagents/background work can pass `ScopedProviderContext`; this is the strongest request-local override and does not mutate shared process state.
+2. **Interactive session selection** — `/providers` and `/model` use AppState session fields plus `ProviderManager.setSessionProviderConfig()` for provider-specific metadata. Session-only selection must not rewrite shared `provider.json`.
+3. **Global default** — explicit `--global` / **Save as global default** writes `provider.json` for future sessions.
 
-### Legacy IDs and migration
+Provider resolution then falls back through `AI_PROVIDER`, the effective project/global `provider.json`, legacy Anthropic backend flags, and finally `DEFAULT_PROVIDER`.
 
-Older configs and CLIs wrote provider IDs that were never registered
-(notably `gemini`). `normalizeProviderId()` in `providerRegistry.ts` maps
-these aliases to canonical IDs (`gemini` → `google`) and is applied:
+`ProviderManager.setSessionProvider()` / `setSessionModel()` are legacy process-global overrides. Do not use them from new interactive UI paths because they can leak across in-process agents and background work.
 
-- when `provider.json` is loaded (`normalizeLegacyProviderConfig` — in-memory
-  only; the file on disk is not rewritten, and legacy `apiKeys` entries are
-  copied to the canonical ID rather than deleted, so older versions keep
-  working)
-- to `AI_PROVIDER` and session-provider values
-- to provider arguments of `/providers` and `clew provider --models`
+### Provider config files
 
-Unknown provider IDs never throw at selection time — they fall through to
-the next precedence level.
+The effective file is:
 
-### Selection-time validation
+- `<project>/.clew/provider.json` when that file already exists; otherwise
+- `~/.clew/provider.json` (or `CLEW_CONFIG_DIR/provider.json`).
 
-`src/services/ai/providerSelection.ts` validates provider/model choices when
-the user changes them (`/providers set <provider> <model>`, `clew provider`):
+A session-only selection keeps its provider/model/providerConfig in memory. API keys entered for the current session are applied immediately through the session key overlay; they are persisted only for an explicit global save.
 
-- provider must resolve to a registry entry (aliases applied)
-- model must appear in the registry catalog **or** the provider's live
-  `/models` listing; when neither yields any models (no API key, offline),
-  the model is accepted unverified
-- `custom` provider models are never validated (arbitrary endpoints)
+## API keys versus provider metadata
 
-ChatGPT can also report request failures inside an otherwise successful SSE
-connection. The ChatGPT adapter converts those `response.failed`/error events
-into normal provider errors so the REPL displays the backend message instead of
-dropping an empty assistant turn.
+Credential fields and endpoint/config fields are different contracts:
 
+- `apiKeys.<provider>` stores credentials only.
+- `providerConfig` stores provider metadata such as `openaiType` and Azure `baseUrl`.
+- Never store endpoint URLs, project IDs, or other routing metadata in `apiKeys`.
+
+This distinction matters for auth headers and for session/global isolation.
+
+## OpenAI
+
+Direct OpenAI uses `OPENAI_API_KEY` and optionally `OPENAI_BASE_URL`.
+
+### Azure OpenAI
+
+Choose **Azure OpenAI** in `/providers`. The picker collects the endpoint separately from the API key. The runtime accepts:
+
+| Variable | Purpose |
+| --- | --- |
+| `AZURE_OPENAI_API_KEY` | Preferred Azure OpenAI credential |
+| `AZURE_API_KEY` | Legacy compatibility fallback |
+| `OPENAI_API_KEY` | Final compatibility fallback |
+| `AZURE_OPENAI_ENDPOINT` | Azure endpoint, e.g. `https://resource.openai.azure.com/` |
+| `AZURE_OPENAI_DEPLOYMENT` | Deployment name; selected model is the fallback |
+| `AZURE_OPENAI_API_VERSION` | API version override |
+
+For picker-created config, `providerConfig.openaiType` is `azure` and the endpoint is stored as `providerConfig.baseUrl`. It is never stored as the OpenAI API key.
+
+Azure model enumeration is intentionally not treated like the public OpenAI `/models` endpoint; deployments are Azure-resource-specific.
+
+## Google
+
+The `google` provider is the Gemini API-key path and uses `GOOGLE_API_KEY` against the Google Generative Language OpenAI-compatible endpoint.
+
+The old **Google Vertex AI** entry was removed from the generic provider picker because `GoogleProvider` did not consume its project-ID/Vertex settings; presenting it as a working choice created invalid configuration. Anthropic-on-Vertex remains a separate Anthropic backend path controlled by the existing Anthropic Vertex configuration/flags.
+
+Gemini Code Assist OAuth is a separate `google-assist` provider and should not be mixed with the `google` API-key contract.
+
+## Legacy IDs and migration
+
+`normalizeProviderId()` maps historical aliases such as `gemini` to canonical provider IDs such as `google`. `normalizeLegacyProviderConfig()` performs an in-memory, non-destructive migration: canonical API-key entries are copied while legacy entries remain for downgrade compatibility.
+
+Unknown provider IDs fall through selection precedence rather than crashing configuration load.
+
+## Selection-time validation
+
+`providerSelection.ts` validates explicit provider/model choices:
+
+- the provider must resolve to a registry entry;
+- a model should match the registry catalog or the provider's live model listing;
+- when no model catalog can be obtained, an explicit model can be accepted as unverified;
+- `custom` provider model IDs are intentionally arbitrary.
+
+## Concurrency rule
+
+Provider choice is execution context. New agent/background APIs should pass a `ScopedProviderContext` instead of mutating `ProviderManager` singleton selection. This keeps concurrent workers from changing one another's provider, model, endpoint, or API key.
+
+## Verification checklist
+
+When adding or changing a provider:
+
+1. update `providers.json` rather than adding a second catalog;
+2. keep credentials separate from endpoint/provider metadata;
+3. verify session-only changes do not write global config;
+4. verify `--global` writes exactly the intended value (flags must never become part of a key/model);
+5. add model-list and selection regression tests;
+6. run `bun run check:ci && bun x tsc --noEmit && bun test --bail`.

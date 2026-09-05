@@ -697,7 +697,6 @@ async function getMessagesForSlashCommand(
             const skipTranscript =
               isFullscreenEnvEnabled() && typeof result === 'string' && result.endsWith(' dismissed');
             void resolve({
-              // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
               messages:
                 options?.display === 'system'
                   ? skipTranscript
@@ -840,7 +839,6 @@ async function getMessagesForSlashCommand(
             // Budget state (on toolUseContext) needs no reset: stale entries
             // are inert (UUIDs never repeat, so they're never looked up).
             return {
-              // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
               messages: buildPostCompactMessages(compactionResultWithSlashMessages),
               shouldQuery: false,
               command,
@@ -874,7 +872,6 @@ async function getMessagesForSlashCommand(
           return {
             messages: [
               userMessage,
-              // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
               createCommandInputMessage(`<local-command-stdout>${result.value}</local-command-stdout>`),
             ],
             shouldQuery: false,
@@ -886,7 +883,6 @@ async function getMessagesForSlashCommand(
           return {
             messages: [
               userMessage,
-              // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
               createCommandInputMessage(`<local-command-stderr>${String(e)}</local-command-stderr>`),
             ],
             shouldQuery: false,

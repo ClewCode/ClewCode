@@ -219,11 +219,9 @@ function sortResumeLogs(logs: LogOption[]): LogOption[] {
 
 function ResumeWithLimit({
   limit,
-  onDone,
   onResume,
 }: {
   limit: number;
-  onDone: (result?: string, options?: { display?: CommandResultDisplay }) => void;
   onResume: (sessionId: UUID, log: LogOption, entrypoint: ResumeEntrypoint, limit?: number) => Promise<void>;
 }): React.ReactNode {
   const [_loading, setLoading] = React.useState(true);
@@ -311,7 +309,7 @@ export const call: LocalJSXCommandCall = async (onDone, context, args) => {
   // Check if arg is a number — resume last session with message limit
   const numArg = parseInt(arg, 10);
   if (!Number.isNaN(numArg) && numArg > 0 && String(numArg) === arg) {
-    return <ResumeWithLimit limit={numArg} onDone={onDone} onResume={onResume} />;
+    return <ResumeWithLimit limit={numArg} onResume={onResume} />;
   }
 
   // Load logs to search (includes same-repo worktrees)

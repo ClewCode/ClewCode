@@ -262,20 +262,3 @@ export function convertSDKMessage(msg: SDKMessage, opts?: ConvertOptions): Conve
 export function isSessionEndMessage(msg: SDKMessage): boolean {
   return msg.type === 'result';
 }
-
-/**
- * Check if an SDKResultMessage indicates success
- */
-function _isSuccessResult(msg: SDKResultMessage): boolean {
-  return msg.subtype === 'success';
-}
-
-/**
- * Extract the result text from a successful SDKResultMessage
- */
-function _getResultText(msg: SDKResultMessage): string | null {
-  if (msg.subtype === 'success') {
-    return msg.result;
-  }
-  return null;
-}

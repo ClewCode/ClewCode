@@ -30,6 +30,7 @@ import {
   removeTask,
   requeueDeadLetter,
   retryTask,
+  updateTask,
   writeTaskLog,
 } from './taskQueue.js';
 
@@ -71,6 +72,21 @@ test('getTask retrieves the task by id', async () => {
   expect(task).toBeDefined();
   expect(task!.title).toBe('Get me');
   expect(task!.status).toBe('pending');
+});
+
+test('read APIs return snapshots instead of mutable queue internals', async () => {
+  const id = await addTask({ title: 'Immutable view', tags: ['original'], dependsOn: [] });
+
+  const direct = getTask(id)!;
+  direct.status = 'completed';
+  direct.tags.push('mutated');
+
+  const listed = listTasks().find(task => task.id === id)!;
+  listed.title = 'changed outside queue';
+
+  expect(getTask(id)?.status).toBe('pending');
+  expect(getTask(id)?.tags).toEqual(['original']);
+  expect(getTask(id)?.title).toBe('Immutable view');
 });
 
 test('listTasks returns tasks ordered by priority', async () => {
@@ -182,9 +198,8 @@ test('expireLeases recovers tasks from crashed workers', async () => {
   const id = await addTask({ title: 'Crashed worker' });
   await leaseTask(id, 'crashed-worker');
 
-  // Manually expire the lease
-  const task = getTask(id)!;
-  task.leaseExpiresAt = Date.now() - 1000;
+  // Persist an expired lease instead of mutating the in-memory read model.
+  await updateTask(id, { leaseExpiresAt: Date.now() - 1000 });
 
   const count = await expireLeases();
   expect(count).toBe(1);

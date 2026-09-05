@@ -206,38 +206,33 @@ export class MyTool extends Tool {
 
 ## Adding a New AI Provider
 
-The provider system lives in `src/services/ai/`.
+The provider system lives in `src/services/ai/`. The declarative catalog is `src/services/ai/providers.json`; do not add a second hardcoded provider/model list.
 
-1. Implement the provider under `src/services/ai/providers/<ProviderName>Provider.ts`.
-2. Implement the required provider interface methods:
+1. Add or update the provider entry in `providers.json` (ID, label, env key, base/model-list URLs, default model, capabilities).
+2. If the API is ordinary OpenAI-compatible, prefer the registry-driven `OpenAICompatibleProvider` path.
+3. When custom runtime behavior is required, implement `ProviderInterface` under `src/services/ai/providers/<ProviderName>Provider.ts`:
 
-   * `streamMessages()`
-   * `stopGeneration()`
-   * `countTokens()`
-3. Use the OpenAI-compatible provider base when the target API supports OpenAI-style chat completions.
-4. Register the provider in `providerRegistry.ts`.
-5. Add provider metadata:
-
-   * Provider name
-   * Environment variable names
-   * Base URL
-   * Supported models
-   * Capabilities
-6. Add tests for model listing, request formatting, streaming behavior, and error handling.
-7. Update documentation in `docs/` and `README.md`.
+   * `getProviderId()`
+   * `getProviderLabel()`
+   * `getProviderApiKeyEnvVar()`
+   * `createClient(options)`
+   * `listModels(options)`
+4. Register dedicated implementations in `providerRegistry.ts`.
+5. Keep credentials in `apiKeys`; keep endpoints/routing metadata in `providerConfig`. Never store endpoint URLs or project IDs in an API-key field.
+6. Preserve scope isolation: session-only `/providers` changes must not rewrite shared `provider.json`; explicit `--global` changes may persist.
+7. Add tests for registry/model discovery, selection, request formatting/adapter behavior, credentials, and error handling.
+8. Update `docs/architecture/provider-system.md`, `README.md`, and `CHANGELOG.md`.
 
 Manual verification:
 
-```bash
-clew --provider-select
-```
-
-Inside the CLI, verify provider commands such as:
-
 ```text
-/provider list
-/provider models <provider-name>
+/providers
+/providers list
+/providers models <provider-name>
+/providers set <provider-name> <model>
 ```
+
+For Azure OpenAI, verify the endpoint and API key remain separate and that both session-only and global selection behave as documented.
 
 ## Plugin, MCP, and Tool Safety
 

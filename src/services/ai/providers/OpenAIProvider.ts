@@ -23,7 +23,8 @@ export class OpenAIProvider implements ProviderInterface {
     if (openaiType === 'azure' || process.env.OPENAI_USE_AZURE === 'true') {
       const { AzureOpenAI } = await import('openai');
       return new AzureOpenAI({
-        apiKey: options.apiKey ?? process.env.OPENAI_API_KEY,
+        apiKey:
+          options.apiKey ?? process.env.AZURE_OPENAI_API_KEY ?? process.env.AZURE_API_KEY ?? process.env.OPENAI_API_KEY,
         endpoint: process.env.AZURE_OPENAI_ENDPOINT || options.baseUrl || '',
         deployment: process.env.AZURE_OPENAI_DEPLOYMENT || options.model || '',
         apiVersion: process.env.AZURE_OPENAI_API_VERSION || '2025-04-01-preview',

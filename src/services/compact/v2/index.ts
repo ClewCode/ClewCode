@@ -13,7 +13,7 @@ import type { Message } from '../../../types/message.js';
 import { isEnvTruthy } from '../../../utils/envUtils.js';
 import type { CacheSafeParams } from '../../../utils/forkedAgent.js';
 import { logError } from '../../../utils/log.js';
-import { isAtNaturalBoundary, isAutoCompactEnabled, resolveAdaptiveBuffer } from '../autoCompact.js';
+import { isAtNaturalBoundary, isAutoCompactEnabled } from '../autoCompact.js';
 import { createEvictionStore, createMemoryEvictionStore, type EvictionRecord } from './evictionStore.js';
 import { EMPTY_HEALTH, recordCompaction } from './health.js';
 import { type ContextLedger, createContextLedger, pressureLevel } from './ledger.js';
@@ -119,8 +119,7 @@ export async function runCompaction(
 
   const isForced = opts.force || opts.manual || Boolean(opts.customInstructions);
   const ledger = ledgerFor(state);
-  // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
-  const pressure = ledger.measure(messages, model, resolveAdaptiveBuffer(messages));
+  const pressure = ledger.measure(messages, model);
   const level = pressureLevel(pressure);
 
   if (level === 'none' && !isForced) {

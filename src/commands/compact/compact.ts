@@ -9,8 +9,6 @@ import {
   ERROR_MESSAGE_EXTRA_USAGE_REQUIRED,
   ERROR_MESSAGE_INCOMPLETE_RESPONSE,
   ERROR_MESSAGE_NOT_ENOUGH_MESSAGES,
-  ERROR_MESSAGE_USER_ABORT,
-  mergeHookInstructions,
 } from '../../services/compact/compact.js';
 import { suppressCompactWarning } from '../../services/compact/compactWarningState.js';
 import { microcompactMessages } from '../../services/compact/microCompact.js';
@@ -22,16 +20,9 @@ import type { ToolUseContext } from '../../Tool.js';
 import type { LocalCommandCall } from '../../types/command.js';
 import type { Message, UserMessage } from '../../types/message.js';
 import { hasExactErrorMessage } from '../../utils/errors.js';
-import { executePreCompactHooks } from '../../utils/hooks.js';
 import { logError } from '../../utils/log.js';
 import { createCompactBoundaryMessage, getMessagesAfterCompactBoundary } from '../../utils/messages.js';
 import { buildEffectiveSystemPrompt, type SystemPrompt } from '../../utils/systemPrompt.js';
-
-/* eslint-disable @typescript-eslint/no-require-imports */
-const reactiveCompact = feature('REACTIVE_COMPACT')
-  ? (require('../../services/compact/reactiveCompact.js') as typeof import('../../services/compact/reactiveCompact.js'))
-  : null;
-/* eslint-enable @typescript-eslint/no-require-imports */
 
 export const call: LocalCommandCall = async (args, context) => {
   const { abortController } = context;
@@ -151,81 +142,6 @@ export const call: LocalCommandCall = async (args, context) => {
     }
   }
 };
-
-async function _compactViaReactive(
-  messages: Message[],
-  context: ToolUseContext,
-  customInstructions: string,
-  _reactive: NonNullable<typeof reactiveCompact>,
-): Promise<{
-  type: 'compact';
-  compactionResult: CompactionResult;
-  displayText: string;
-}> {
-  context.onCompactProgress?.({
-    type: 'hooks_start',
-    hookType: 'pre_compact',
-  });
-  context.setSDKStatus?.('compacting' as any);
-
-  try {
-    // Hooks and cache-param build are independent — run concurrently.
-    // getCacheSharingParams walks all tools to build the system prompt;
-    // pre-compact hooks spawn subprocesses. Neither depends on the other.
-    const [hookResult, cacheSafeParams] = await Promise.all([
-      executePreCompactHooks({
-        trigger: 'manual',
-        customInstructions: customInstructions || null,
-      }),
-      getCacheSharingParams(context, messages),
-    ]);
-
-    const mergedInstructions = mergeHookInstructions(customInstructions, hookResult.newCustomInstructions);
-
-    const compactResult = await compactConversation(
-      messages,
-      context,
-      cacheSafeParams,
-      true,
-      mergedInstructions,
-      false,
-    );
-
-    setLastSummarizedMessageId(undefined);
-    suppressCompactWarning();
-
-    (getUserContext as any).cache.clear?.();
-    runPostCompactCleanup();
-
-    const rawResponse = getLastRawCompactResponse();
-    const memories = rawResponse ? parseCompactMemories(rawResponse) : undefined;
-    const extractResult = await autoExtractFromSession(memories).catch(() => null);
-
-    return {
-      type: 'compact',
-      compactionResult: compactResult,
-      displayText: buildDisplayText(context, compactResult.userDisplayMessage, extractResult),
-    };
-  } catch (error) {
-    if (context.abortController.signal.aborted) {
-      throw new Error('Compaction canceled.');
-    } else if (hasExactErrorMessage(error, ERROR_MESSAGE_NOT_ENOUGH_MESSAGES)) {
-      throw new Error(ERROR_MESSAGE_NOT_ENOUGH_MESSAGES);
-    } else if (hasExactErrorMessage(error, ERROR_MESSAGE_INCOMPLETE_RESPONSE)) {
-      throw new Error(ERROR_MESSAGE_INCOMPLETE_RESPONSE);
-    } else if (hasExactErrorMessage(error, ERROR_MESSAGE_EXTRA_USAGE_REQUIRED)) {
-      throw new Error(ERROR_MESSAGE_EXTRA_USAGE_REQUIRED);
-    } else if (hasExactErrorMessage(error, ERROR_MESSAGE_USER_ABORT)) {
-      throw new Error(ERROR_MESSAGE_USER_ABORT);
-    } else {
-      logError(error);
-      throw new Error(`Error during compaction: ${error}`);
-    }
-  } finally {
-    context.onCompactProgress?.({ type: 'compact_end' });
-    context.setSDKStatus?.(null as any);
-  }
-}
 
 async function getCacheSharingParams(
   context: ToolUseContext,

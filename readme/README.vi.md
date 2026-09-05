@@ -53,7 +53,6 @@ Tính năng chính:
 * **Công cụ đánh giá mã** — Sử dụng `/code-review --fix` để kiểm tra và áp dụng thay đổi, `/simplify` để dọn dẹp mã
 * **Đánh giá tự động Guardian** — `/guardian` định tuyến yêu cầu cấp quyền đến người đánh giá LLM với bộ ngắt mạch
 * **Quản lý PR** — `/pr create`, `list`, `view`, `review`, `merge`, `status`
-* **Điều khiển từ xa độc lập nhà cung cấp** — `/remote` để chia sẻ CLI qua WebSocket
 * **Trình chọn mô hình** — Chọn mô hình toàn cục hoặc chỉ trong phiên
 * **Chợ plugin** — Hỗ trợ `skipLfs` cho nguồn plugin
 * **Nghiên cứu cục bộ** — Sử dụng `/research <query>` cho quy trình nghiên cứu với thu thập web cục bộ

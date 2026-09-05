@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Box, Text } from '../ink.js';
+import { Box, Text, useInput } from '../ink.js';
 import { useKeybinding } from '../keybindings/useKeybinding.js';
 import { PermissionDialog } from './permissions/PermissionDialog.js';
 
@@ -33,6 +33,12 @@ export function PromptEnhancementDialog({
   }, [isLoading]);
 
   useKeybinding('app:interrupt', onCancel, { isActive: isOpen && !isLoading });
+  useInput(
+    (_input, key) => {
+      if (key.return) onApply();
+    },
+    { isActive: isOpen && !isLoading },
+  );
 
   if (!isOpen) {
     return null;

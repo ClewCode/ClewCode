@@ -53,7 +53,6 @@ Principales fonctionnalités :
 * **Outils de révision de code** — `/code-review --fix` pour vérifier et appliquer les modifications, `/simplify` pour nettoyer
 * **Révision automatique Guardian** — `/guardian` achemine les demandes d'autorisation vers un réviseur LLM avec coupe-circuit
 * **Gestion des PR** — `/pr create`, `list`, `view`, `review`, `merge`, `status`
-* **Contrôle à distance indépendant du fournisseur** — `/remote` pour le partage CLI via WebSocket
 * **Sélecteur de modèles** — Sélection globale ou limitée à la session
 * **Marketplace de plugins** — Support `skipLfs` pour les sources de plugins
 * **Recherche locale** — `/research <query>` pour un workflow de recherche avec scraping web local

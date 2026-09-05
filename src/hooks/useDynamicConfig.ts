@@ -13,7 +13,14 @@ export function useDynamicConfig<T>(configName: string, defaultValue: T): T {
       // Prevents a test hang when using this hook in tests
       return;
     }
-    void getDynamicConfig_BLOCKS_ON_INIT<T>(configName, defaultValue).then(setConfigValue);
+    let cancelled = false;
+    setConfigValue(defaultValue);
+    void getDynamicConfig_BLOCKS_ON_INIT<T>(configName, defaultValue).then(value => {
+      if (!cancelled) setConfigValue(value);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [configName, defaultValue]);
 
   return configValue;

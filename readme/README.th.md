@@ -155,7 +155,6 @@ export OLLAMA_HOST=http://localhost:11434
 /bridge       ตั้งค่า bridge mode
 /agent        จัดการ background agent workflows
 /swarm         ค้นหาและประสานงาน peers บน LAN
-/remote       WebSocket remote control
 /loop         เปิดโหมด agent อัตโนมัติ 24/7
 /daemon       เปิด autonomous daemon dashboard
 /task         สร้างหรือจัดการ scheduled tasks

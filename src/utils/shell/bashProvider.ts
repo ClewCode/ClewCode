@@ -16,6 +16,7 @@ import { getSessionEnvVars } from '../sessionEnvVars.js';
 import { ensureSocketInitialized, getClaudeTmuxEnv, hasTmuxToolBeenUsed } from '../tmuxSocket.js';
 import { windowsPathToPosixPath } from '../windowsPaths.js';
 import type { ShellProvider } from './shellProvider.js';
+import { waitForSnapshotWithTimeout } from './snapshotFallback.js';
 
 /**
  * Returns a shell command to disable extended glob patterns for security.
@@ -66,23 +67,17 @@ export async function createBashShellProvider(
           return path;
         });
 
-  // On Windows, if snapshot creation is not healthy after a short wait,
-  // fall back to a no-snapshot provider so the agent can continue working
-  // instead of stalling on shell startup.
-  let _fallbackTimer: ReturnType<typeof setTimeout> | undefined;
-  let resolvedProvider: Promise<ShellProvider> | undefined;
+  // On Windows, stop waiting after a short grace period and continue without
+  // a snapshot. The previous timer awaited snapshotPromise inside the timeout
+  // callback, which meant a hung snapshot could still block forever.
+  const snapshotReadyPromise =
+    getPlatform() === 'windows' && !options?.skipSnapshot
+      ? waitForSnapshotWithTimeout(snapshotPromise, 4000, () => {
+          logForDebugging('Shell snapshot did not complete in time on Windows; continuing without a snapshot');
+        })
+      : snapshotPromise;
   // Track the last resolved snapshot path for use in getSpawnArgs
   let lastSnapshotFilePath: string | undefined;
-
-  if (getPlatform() === 'windows' && !options?.skipSnapshot) {
-    _fallbackTimer = setTimeout(async () => {
-      const snapshotFilePath = await snapshotPromise;
-      if (!snapshotFilePath && !resolvedProvider) {
-        logForDebugging('Shell snapshot did not complete in time on Windows; using no-snapshot bash provider');
-        resolvedProvider = createBashShellProvider(shellPath, { skipSnapshot: true });
-      }
-    }, 4000);
-  }
 
   return {
     type: 'bash',
@@ -90,11 +85,7 @@ export async function createBashShellProvider(
     detached: true,
 
     isHealthy: async (): Promise<boolean> => {
-      if (resolvedProvider) {
-        const healthy = await (await resolvedProvider).isHealthy?.();
-        return healthy ?? false;
-      }
-      const snapshotFilePath = await snapshotPromise;
+      const snapshotFilePath = await snapshotReadyPromise;
       return snapshotCreated && !!snapshotFilePath;
     },
 
@@ -106,11 +97,7 @@ export async function createBashShellProvider(
         useSandbox: boolean;
       },
     ): Promise<{ commandString: string; cwdFilePath: string }> {
-      if (resolvedProvider) {
-        return (await resolvedProvider).buildExecCommand(command, opts);
-      }
-
-      let snapshotFilePath = await snapshotPromise;
+      let snapshotFilePath = await snapshotReadyPromise;
       // This access() check is NOT pure TOCTOU — it's the fallback decision
       // point for getSpawnArgs. When the snapshot disappears mid-session
       // (tmpdir cleanup), we must clear lastSnapshotFilePath so getSpawnArgs
@@ -218,12 +205,6 @@ export async function createBashShellProvider(
     },
 
     getSpawnArgs(commandString: string): string[] {
-      if (resolvedProvider) {
-        // Note: this path is synchronous, but resolvedProvider is a Promise.
-        // In practice this branch is only reached after the fallback promise
-        // has resolved because buildExecCommand awaits it first.
-        return [];
-      }
       const skipLoginShell = lastSnapshotFilePath !== undefined;
       if (skipLoginShell) {
         logForDebugging('Spawning shell without login (-l flag skipped)');
@@ -232,9 +213,6 @@ export async function createBashShellProvider(
     },
 
     async getEnvironmentOverrides(command: string): Promise<Record<string, string>> {
-      if (resolvedProvider) {
-        return (await resolvedProvider).getEnvironmentOverrides(command);
-      }
       // TMUX SOCKET ISOLATION (DEFERRED):
       // We initialize Claude's tmux socket ONLY AFTER the Tmux tool has been used
       // at least once, OR if the current command appears to use tmux.

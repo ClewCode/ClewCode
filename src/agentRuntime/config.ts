@@ -1,22 +1,11 @@
 import path from 'node:path';
 import { AGENTS_DIR, DOT_CLEW, RUNS_DIR, WORKFLOWS_DIR } from '../utils/clewPaths.js';
-import type { AgentDefinition, RuntimeBudget, WorkflowDefinition } from './types.js';
+import type { AgentDefinition, WorkflowDefinition } from './types.js';
 
 const RUNTIME_DIRS = {
   runs: `${DOT_CLEW}/${RUNS_DIR}`,
   agents: `${DOT_CLEW}/${AGENTS_DIR}`,
   workflows: `${DOT_CLEW}/${WORKFLOWS_DIR}`,
-};
-
-const _DEFAULT_BUDGET: RuntimeBudget = {
-  maxSteps: 40,
-  maxToolCalls: 120,
-  maxLlmCalls: 40,
-  timeoutMs: 1800000, // 30 mins
-  maxOutputBytesPerTool: 20000,
-  maxPatchBytes: 100000,
-  maxChangedFiles: 20,
-  maxCostUsd: null,
 };
 
 export function resolveRuntimePath(workspaceRoot: string, subDir: keyof typeof RUNTIME_DIRS): string {

@@ -490,16 +490,6 @@ export function parseMaxTokensContextOverflowError(error: APIError):
   return { inputTokens, maxTokens, contextLimit };
 }
 
-// TODO: Replace with a response header check once the API adds a dedicated
-// header for fast-mode rejection (e.g., x-fast-mode-rejected). String-matching
-// the error message is fragile and will break if the API wording changes.
-function _isFastModeNotEnabledError(error: unknown): boolean {
-  if (!(error instanceof APIError)) {
-    return false;
-  }
-  return error.status === 400 && (error.message?.includes('Fast mode is not enabled') ?? false);
-}
-
 export function is529Error(error: unknown): boolean {
   if (!(error instanceof APIError)) {
     return false;
@@ -716,9 +706,6 @@ export function getDefaultMaxRetries(): number {
 function getMaxRetries(options: RetryOptions): number {
   return options.maxRetries ?? getDefaultMaxRetries();
 }
-
-const _SHORT_RETRY_THRESHOLD_MS = 20 * 1000; // 20 seconds
-const _MIN_COOLDOWN_MS = 10 * 60 * 1000; // 10 minutes
 
 function getRetryAfterMs(error: unknown): number | null {
   const providerMs = getProviderRetryAfterMs(error);

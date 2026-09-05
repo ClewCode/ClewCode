@@ -917,35 +917,6 @@ export const SettingsSchema = lazySchema(() =>
           }
         : {}),
       disableAutoMode: z.enum(['disable']).optional().describe('Disable auto mode'),
-      sshConfigs: z
-        .array(
-          z.object({
-            id: z
-              .string()
-              .describe('Unique identifier for this SSH config. Used to match configs across settings sources.'),
-            name: z.string().describe('Display name for the SSH connection'),
-            sshHost: z
-              .string()
-              .describe('SSH host in format "user@hostname" or "hostname", or a host alias from ~/.ssh/config'),
-            sshPort: z.number().int().optional().describe('SSH port (default: 22)'),
-            sshIdentityFile: z.string().optional().describe('Path to SSH identity file (private key)'),
-            startDirectory: z
-              .string()
-              .optional()
-              .describe(
-                'Default working directory on the remote host. ' +
-                  'Supports tilde expansion (e.g. ~/projects). ' +
-                  'If not specified, defaults to the remote user home directory. ' +
-                  'Can be overridden by the [dir] positional argument in `claude ssh <config> [dir]`.',
-              ),
-          }),
-        )
-        .optional()
-        .describe(
-          'SSH connection configurations for remote environments. ' +
-            'Typically set in managed settings by enterprise administrators ' +
-            'to pre-configure SSH connections for team members.',
-        ),
       claudeMdExcludes: z
         .array(z.string())
         .optional()

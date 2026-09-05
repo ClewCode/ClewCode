@@ -88,7 +88,6 @@ export class OpenAIOAuthService {
       loginHint: options?.loginHint,
     };
     const manualFlowUrl = this.buildAuthUrl({ ...opts, isManual: true });
-    const _automaticFlowUrl = this.buildAuthUrl({ ...opts, isManual: true }); // Use manual (platform.openai.com) for both
 
     // Wait for authorization code
     const authorizationCode = await this.waitForAuthorizationCode(state, async () => {

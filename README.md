@@ -1,4 +1,4 @@
-# Clew Code
+﻿# Clew Code
 
 Clew Code is an AI coding agent for the terminal. It works in your repository, where it can read and edit files, run commands, use development tools, and help complete multi-step tasks.
 
@@ -74,7 +74,7 @@ You can select a model for the current session or save it as the default. To sel
 /model provider/model
 ```
 
-Use `/providers` to configure provider connections. Clew Code supports Claude, GPT, Gemini, DeepSeek, Groq, Ollama, OpenRouter, and other providers.
+Use `/providers` to configure provider connections. Provider/model changes are session-scoped by default; choose **Save as global default** when you want new sessions to inherit them. Clew Code supports Claude, GPT, Gemini, DeepSeek, Groq, Ollama, OpenRouter, and other providers.
 
 By default, `/login` uses the Clew gateway at `api.clew-code.org`. Set `CLEW_DISABLE_GATEWAY=1` to use provider credentials directly.
 
@@ -88,7 +88,7 @@ Clew Code provides:
 - Plans, tasks, checkpoints, context compaction, and `/rewind`
 - Multiple agents, background tasks, cron jobs, and daemons
 - **Filesystem-first Memory** (`.clew/memory/store/*.md` + `index.json` cache + `timeline.jsonl`) and **Taste** (`.clew/taste/rules|evidence|conflicts`) with auto-learning (`/taste why`)
-- **The Shining** — anticipatory layer (`needed_context` / `next_tool` / `risk` premonitions → prefetch + `ToolSearch` preload)
+- **The Shining** â€” anticipatory layer (`needed_context` / `next_tool` / `risk` premonitions â†’ prefetch + `ToolSearch` preload)
 - Prompt cache for all providers (27 `automatic` + Anthropic `explicit`, 4 breakpoints, `CLEW_CACHE_RETENTION=long` defaults to 1h)
 - Semantic code search, plugins, skills, hooks, and MCP servers
 - Workspace linking and optional audit logs
@@ -122,6 +122,10 @@ Provider credentials can be configured interactively or with environment variabl
 | --- | --- |
 | `ANTHROPIC_API_KEY` | Anthropic |
 | `OPENAI_API_KEY` | OpenAI |
+| `AZURE_OPENAI_API_KEY` | Azure OpenAI API key |
+| `AZURE_OPENAI_ENDPOINT` | Azure OpenAI endpoint URL |
+| `AZURE_OPENAI_DEPLOYMENT` | Azure OpenAI deployment name (defaults to selected model) |
+| `AZURE_OPENAI_API_VERSION` | Azure OpenAI API version override |
 | `GOOGLE_API_KEY` | Google Gemini |
 | `DEEPSEEK_API_KEY` | DeepSeek |
 | `GROQ_API_KEY` | Groq |
@@ -131,7 +135,7 @@ Provider credentials can be configured interactively or with environment variabl
 | `JINA_API_KEY` | Jina search and fetch |
 | `CLEW_DISABLE_GATEWAY=1` | Use provider keys directly |
 | `CLEW_DISABLE_TELEMETRY=1` | Disable anonymous usage statistics |
-| `CLEW_CACHE_RETENTION=long` | Prompt cache 1h (default) — `short` for 5m, alias `PI_CACHE_RETENTION` |
+| `CLEW_CACHE_RETENTION=long` | Prompt cache 1h (default) â€” `short` for 5m, alias `PI_CACHE_RETENTION` |
 | `bun run cleanup:memory-db` | Remove legacy `memory.db`/`chunks.db`/`taste.db` SQLite caches |
 
 Settings are stored locally. See the [provider documentation](https://clew-docs.pages.dev/providers) for the current provider list.

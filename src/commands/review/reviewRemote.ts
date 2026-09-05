@@ -3,10 +3,6 @@
  * sends the review prompt as the initial message, and registers a
  * RemoteAgentTask so the polling loop pipes results back into the local
  * session via task-notification. Mirrors the /ultraplan → CCR flow.
- *
- * TODO(#22051): pass useBundleMode once landed so local-only / uncommitted
- * repo state is captured. The GitHub-clone path (current) only works for
- * pushed branches on repos with the Claude GitHub app installed.
  */
 
 import type { ContentBlockParam } from '@anthropic-ai/sdk/resources/messages.js';

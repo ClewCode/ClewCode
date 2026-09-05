@@ -177,16 +177,16 @@ Tools/commands are registered in `src/tools.ts` / `src/commands.ts`; entrypoints
 
 - **Tool:** class under `src/tools/<Name>/` extending `Tool`; register in `src/tools.ts` → `getAllBaseTools()`. Feature-gated tools: lazy `require()` + `bun:bundle` defines.
 - **Command:** module under `src/commands/`; add to `COMMANDS()` in `src/commands.ts`.
-- **Provider:** declarative entry in `src/services/ai/providers.json` + adapter under `src/services/ai/` / `adapter/` as needed; discovery via `providerRegistry.ts` / `ModelDiscoveryService.ts`.
+- **Provider:** declarative entry in `src/services/ai/providers.json` + adapter under `src/services/ai/` / `adapter/` as needed; discovery via `providerRegistry.ts` and live model fetching in `providerModels.ts`.
 
 ### Providers (`src/services/ai/`)
 
 - `ProviderManager.ts` — unified call interface
 - `providers.json` — ~32 provider definitions (flagged via `capabilities` object; live `models[]` array per provider). Per-model `maxContext` is the static fallback for the ctx% / auto-compact limit.
 - `providerRegistry.ts` / `providerSelection.ts` — discovery & selection
-- Context-window resolution: for non-Anthropic providers, live `/models` value (cached by `fetchProviderModels`, read via `getCachedModelContext`) is preferred over the static `maxContext`. Anthropic first-party uses its own capability cache.
+- Context-window resolution: for non-Anthropic providers, live `/models` value (cached by `fetchProviderModels`, read via `getCachedModelLimits`) is preferred over the static `maxContext`. Anthropic first-party uses its own capability cache.
 - Prompt cache: `promptCaching: explicit` (Anthropic) + `automatic` (26 providers — OpenAI/OpenRouter/DeepSeek/etc.) → `cache_control` 4 breakpoints (`system+tools+user+assistant`), deterministic tool sort, `CLEW_CACHE_RETENTION=long` defaults to 1h (alias `PI_CACHE_RETENTION`)
-- Mid-session switch: `/model`, `/provider`
+- Mid-session switch: `/model`, `/providers`
 - **Model scope:** `/model` is session-scoped by default (AppState's `mainLoopModelForSession` → `setMainLoopModelOverride()`). Only the picker's `d` writes to `userSettings`. Do NOT call `ProviderManager.setSessionModel`/`setSessionProvider` (process-global singletons — leak into agents and bg tasks) from model paths.
 
 ### Tools / commands / services
@@ -200,7 +200,7 @@ Commands: ~105 under `src/commands/`; `src/commands.ts` is source of truth.
 | `ai/` | Multi-provider LLM |
 | `mcp/` | MCP client (stdio/SSE/HTTP/DirectConnect) |
 | `autonomous/` | Task queue, leases, cron, dead-letter, daemon |
-| `compact/v2/` | **Reducer-based compaction** — triggers at **80%** of usable window (`limit*0.8`, like manual `/compact` at 80% ctx), single planner replaces 6 legacy mechanisms (dedupe → stale-tool → snip → summarize → drop), per-agent health |
+| `compact/v2/` | **Reducer-based compaction** — triggers at **80%** of usable window (`limit*0.8`, like manual `/compact` at 80% ctx), single planner replaces the legacy reduction stack (active: `dedupe -> stale-tool -> summarize -> drop`), per-agent health |
 | `longTermMemory/` (with `extract.ts` + `dream/` + `timeline`/`distill`/`graph`) | Unified long-term memory — `extractMemories` + `autoDream` consolidated here (0.9.3); old paths re-export then removed |
 | `memory/` (filesystem) | SoT: `.clew/memory/store/*.md` + `timeline.jsonl` + derived `index.json` cache — `frontmatter.ts` + `indexCache.ts` (mtime+size) |
 | `taste/` (filesystem) | SoT: `.clew/taste/rules|evidence|conflicts/*.md` — auto-learning `Signal→Evidence→Learner→Rule` (`candidate→weak→active→conflicted`), `/taste why` |
@@ -212,7 +212,7 @@ Commands: ~105 under `src/commands/`; `src/commands.ts` is source of truth.
 | `auditLog/` | Opt-in SIEM NDJSON audit trail |
 | `lsp/` | Language server integration |
 
-Other large surface areas: `src/agentRuntime/` (background orchestration, ultracode, workflows), `src/memory/` (SQLite), `src/remote/` (Bridge v2), `src/plugins/`, `src/skills/`, `src/coordinator/`, `src/tasks/`, `src/vim/`, `src/buddy/`, `src/cli/` (arg parsing), `src/assistant/` (Kairos), `src/upstreamproxy/`, `src/native-ts/`, `src/moreright/`.
+Other large surface areas: `src/agentRuntime/` (background orchestration, ultracode, workflows), `src/memory/` (filesystem-backed memory SoT), `src/remote/` (remote-session transport/history; Bridge v2 `/remote` was removed), `src/plugins/`, `src/skills/`, `src/coordinator/`, `src/tasks/`, `src/vim/`, `src/buddy/`, `src/cli/` (arg parsing), `src/assistant/` (Kairos), `src/upstreamproxy/`, `src/native-ts/`, `src/moreright/`.
 
 ## System prompt flow
 
@@ -325,4 +325,4 @@ Co-located `.test.ts`/`.test.tsx` with sources (under `src/` and `tests/`), run 
 
 - `src/bridge/` — legacy CCR
 - `src/services/mcp/claudeai.ts`, `src/services/oauth/`, `src/services/claudeAiLimits.ts` — claude.ai-era paths
-- Prefer provider-agnostic `src/remote/` for new bridge work
+- Bridge v2 `/remote` is removed. For remote execution use the supported CCR/teleport path and existing remote-session transport; do not reintroduce the deleted relay/token-store stack without a new design review.
