@@ -1,6 +1,6 @@
 {
   "name": "clew-code",
-  "version": "0.10.1",
+  "version": "0.11.0",
   "description": "ClewCode â€” multi-provider AI coding agent CLI",
   "main": "./dist/main.js",
   "type": "module",

@@ -202,8 +202,8 @@ Commands: ~105 under `src/commands/`; `src/commands.ts` is source of truth.
 | `compact/v2/` | **Reducer-based compaction** — triggers at **80%** of usable window (`limit*0.8`, like manual `/compact` at 80% ctx), single planner replaces the legacy reduction stack (active: `dedupe -> stale-tool -> summarize -> drop`), per-agent health |
 | `longTermMemory/` (with `extract.ts` + `dream/` + `timeline`/`distill`/`graph`) | Unified long-term memory — `extractMemories` + `autoDream` consolidated here (0.9.3); old paths re-export then removed |
 | `memory/` (filesystem) | SoT: `.clew/memory/store/*.md` + `timeline.jsonl` + derived `index.json` cache — `frontmatter.ts` + `indexCache.ts` (mtime+size) |
-| `taste/` (filesystem) | SoT: `.clew/taste/rules|evidence|conflicts/*.md` — auto-learning `Signal→Evidence→Learner→Rule` (`candidate→weak→active→conflicted`), `/taste why` |
-| `shining/` (filesystem) | Anticipatory layer: `observer → predictor → scorer (Taste prior) → premonition-store (.clew/shining/premonitions/*.md)` + `policy` + `prefetch` → `ToolSearch`/`Memory`/`Todo` |
+| `taste/` | **Removed in 0.11.0** (ant-only). Taste preferences survive only as a plain `TASTE.md` file loaded by `memory/budgetInjector.ts` and written by `memory/feedback.ts`; there is no auto-learning module, `/taste` command, or prompt section |
+| `shining/` (filesystem) | Anticipatory layer: `observer → predictor → scorer → premonition-store (.clew/shining/premonitions/*.md)` + `policy` + `prefetch` → `ToolSearch`/`Memory`/`Todo` |
 | `checkpoint/`, `goal/` | Progress snapshots & goal verification |
 | `plugins/` | Pre/Post tool/bash/edit hooks |
 | `sessionSearch/`, `SessionLifecycle/`, `SessionMemory/` | Session life & FTS5 search |
@@ -225,7 +225,7 @@ Dynamic section registry (each can be `null`/feature-gated; resolved by `resolve
 | Section | Notes |
 |---|---|
 | `session_guidance` | From enabled tools + skill tool commands |
-| `memory`, `taste`, `shining`, `budgeted_memory` | Auto-memory / taste / **shining premonitions+prefetch** / budgeted memory |
+| `memory`, `shining`, `budgeted_memory` | Auto-memory / **shining premonitions+prefetch** / budgeted memory |
 | `session_goal` | Active goal |
 | `env_info_simple` | Model/environment info; `deps: [model]` so it recomputes on `/model` switch |
 | `language`, `output_style` | Locale + output style config |
@@ -266,7 +266,7 @@ Prefer TinyFish MCP for web work over built-in WebSearch/WebFetch/BrowserTool wh
 ## Memory & Shining (filesystem SoT)
 
 - **Memory:** `.clew/memory/store/*.md` (frontmatter `id/key/type/importance/confidence`) + `timeline.jsonl` + derived `index.json` (mtime+size, `indexCache.ts`), `database.ts` is now filesystem. Cleanup: `bun run cleanup:memory-db` removes legacy `memory.db/chunks.db/taste.db`.
-- **Shining:** `.clew/shining/premonitions/*.md` (10 min TTL), `observer → predictor (heuristic + Taste prior) → scorer → premonition-store → policy (ignore/prefetch/suggest/prepare) → prefetch → <shining_premonitions>+<shining_prefetch>` injected via `systemPromptSection('shining')`; premonitions boost `ToolSearch` (don't defer predicted tools) and `budgetedInject` (+0.15) and surface `→ Suggested Todo`.
+- **Shining:** `.clew/shining/premonitions/*.md` (10 min TTL), `observer → predictor (heuristic) → scorer → premonition-store → policy (ignore/prefetch/suggest/prepare) → prefetch → <shining_premonitions>+<shining_prefetch>` injected via `systemPromptSection('shining')`; premonitions boost `ToolSearch` (don't defer predicted tools) and `budgetedInject` (+0.15) and surface `→ Suggested Todo`.
 
 ## Semantic memory index (`src/memdir/`)
 

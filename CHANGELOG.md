@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-10-05
+
+Minor release. **Breaking for `/taste` users:** the taste auto-learning module, its slash command, and its system-prompt section are gone. Shining auto-learning and the filesystem-backed `.clew/taste/` rules service are unchanged.
+
 ### Changed
 
 - Flattened the TODO list display: dropped the three-level `├─`/`└─`/`│` tree glyphs and Roman-numeral section prefixes in favour of a two-space indent, per-status glyphs (`✓` done, `◐` running, `○` pending, `⊘` blocked), and a lone group folded onto the `TODO` title line.

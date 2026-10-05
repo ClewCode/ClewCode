@@ -89,7 +89,7 @@ Clew Code provides:
 - Streaming responses and multi-step tool use
 - Plans, tasks, checkpoints, context compaction, and `/rewind`
 - Multiple agents, background tasks, cron jobs, and daemons
-- **Filesystem-first Memory** (`.clew/memory/store/*.md` + `index.json` cache + `timeline.jsonl`) and **Taste** (`.clew/taste/rules|evidence|conflicts`) with auto-learning (`/taste why`)
+- **Filesystem-first Memory** (`.clew/memory/store/*.md` + `index.json` cache + `timeline.jsonl`), with preferences read from a plain `TASTE.md`
 - **The Shining** â€” anticipatory layer (`needed_context` / `next_tool` / `risk` premonitions â†’ prefetch + `ToolSearch` preload)
 - Prompt cache for all providers (27 `automatic` + Anthropic `explicit`, 4 breakpoints, `CLEW_CACHE_RETENTION=long` defaults to 1h)
 - Semantic code search, plugins, skills, hooks, and MCP servers
