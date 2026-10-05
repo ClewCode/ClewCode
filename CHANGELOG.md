@@ -4,6 +4,64 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- Flattened the TODO list display: dropped the three-level `├─`/`└─`/`│` tree glyphs and Roman-numeral section prefixes in favour of a two-space indent, per-status glyphs (`✓` done, `◐` running, `○` pending, `⊘` blocked), and a lone group folded onto the `TODO` title line.
+
+- Extracted the TODO-list grouping and timing logic into `src/components/taskListUtils.ts` and `src/components/useTaskTiming.ts`, and replaced the two hand-rolled copies of `formatAge`/`formatTokens`/`formatCost`/`truncateToWidth` in `MainAgentActivity.tsx` and `DashboardMonitor.tsx` with shared `src/utils/format.ts` helpers.
+
+- Extracted the REPL's notification setup, transcript search, and swarm-bridge refs into `src/screens/REPL/{useReplNotifications,useTranscriptSearch,useSwarmBridge}.ts`; notification hook registration order is preserved because those hooks install side effects.
+
+- Give `<ContextStats>` a progress bar and an explicit `Estimated:` label so local category estimates are never read as exact API token counts, and show the last API input/cache usage on its own line.
+
+### Fixed
+
+- Collapse identical adjacent text-only assistant messages emitted by provider retries while preserving tool and thinking protocol blocks.
+
+- Make background prompt suggestions opt-in instead of issuing an extra model request after every turn by default.
+
+- Let inline Markdown code, file paths, and identifiers inherit surrounding text styling without emitting ANSI resets; syntax highlighting remains limited to fenced code blocks.
+
+- Use a distinct active-plan color instead of green for in-progress TODO items, and make the recommended statusline show unknown context as `ctx:…` with precision below 10%.
+
+- Preserve and report cached input tokens from Responses API usage without counting them twice; Responses requests do not receive incompatible Anthropic `cache_control` markers.
+
+- Prevent `/context` from generating model completions to count tokens when the token-count endpoint is unavailable; use local estimates instead.
+- Keep `/context` estimated totals consistent with its category grid, display last API input/cache usage separately, and distinguish loaded MCP tools from excluded deferred tools.
+
+- Clamp the selected index in `DiffDialog` and `MessageSelector` when the file or message list shrinks, instead of rendering one past the end.
+
+- Replace array-index React keys in the async and in-process teammate detail dialogs with stable activity descriptions, removing key collisions when two activities render identically.
+
+- Treat a malformed IDE `FILE_SAVED` payload whose second element is missing as "not a save" instead of throwing on `data[1].text`.
+
+- Report an unknown tool name as `Tool '<name>' denied by gateway` rather than the misleading "not implemented" throw, which is unreachable because `preAuthorize()` denies unknown tools upstream.
+
+- Make `iTerm.rebalancePanes` a plain no-op instead of logging an unimplemented-feature warning on every call; iTerm2 balances panes itself.
+
+- Reset the streaming thinking buffer at the start of each user turn so a second provider thinking block cannot merge into the previous turn's reasoning display.
+
+### Removed
+
+- Removed redundant hardcoded `openrouter/free` / `kilo-auto/free` fast-path in `getModelCosts()` (exact `isFree` table entries already resolve via `lookupProviderPricing`) and the stale fast-mode JSDoc; fixed the `coreTypes.generated.d.ts` / `coreTypes.ts` headers that pointed at the nonexistent `bun scripts/generate-sdk-types.ts` (types are maintained by hand, no generator script).
+- Replaced plugin/MCP `__stub` type shims with real `UnifiedInstalledItem`, `ViewState`, and MCP `ServerInfo` unions (removing the stale `@ts-expect-error` suppressions), and gave the ant-only `attributionHooks` module no-op exports so its dynamic imports no longer resolve to `undefined`.
+
+- Removed the ant-only taste auto-learning module: all 16 files under `src/taste/` (signal, collector, detector, learner, aggregator, explain, hooks, retrieval, and both SQLite/file stores), the `/taste` command and its `COMMANDS()` registration, the `taste` system-prompt section, and the `hookExplicitPreference` call in `QueryEngine`. Shining auto-learning still runs on every turn; the filesystem-backed `.clew/taste/` rules service is a separate surface and is unchanged.
+
+- Removed the ant-only `DevBar` REPL overlay, the `MemoryUsageIndicator` prompt widget, and the `useMemoryUsage` hook behind them. `/context` still reports memory and token usage.
+
+- Removed the ant-only `WorkflowTool` (plus `WORKFLOW_TOOL_NAME`, its `ALL_AGENT_DISALLOWED_TOOLS` entry, and its permission request), the `ReviewArtifactTool` (plus its permission request), and the `OVERFLOW_TEST_TOOL` classifier stub. `classifierDecision.ts` now pins `OVERFLOW_TEST_TOOL_NAME` and `WORKFLOW_TOOL_NAME` to `null` with a note to re-add the `require` when a real implementation ships.
+
+- Removed the expired Grove consumer-terms grace period: the `defer` decision, the "Not now" option, and `GracePeriodContentBody`. The Grove dialog is now unconditionally non-dismissible.
+
+- Removed the unused `SnipBoundaryMessage`, `UserCrossSessionMessage`, `UserForkBoilerplateMessage`, and `UserGitHubWebhookMessage` renderers.
+
+- Replaced `lodash-es/sample` with an inline `arr[Math.floor(Math.random() * arr.length)]` pick in `exit`, `ExitFlow`, `exampleCommands`, `spawnInProcess`, and `TeammateSpinnerLine`, dropping the last five imports of that module.
+
+### Housekeeping
+
+- Stripped inlined `//# sourceMappingURL=data:...` build artifacts that had been committed into 146 files under `src/`.
+
 ## [0.10.1] - 2026-09-06
 
 ### Removed
@@ -30,6 +88,10 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- Forward output and reasoning budgets on Responses API requests so OpenCode models do not silently use the gateway default.
+
+- Use the OpenRouter capability catalog as a context-window fallback for gateway models missing from the local registry, including `-free` model IDs.
+- Allow safe `Edit` retries after an unrelated file change: the tool now rereads current content and proceeds only when the requested target still matches uniquely (or `replace_all` was explicitly requested).
 - Fixed IDE diff lifecycle races: the hook now uses a stable callback instead of reopening a diff on every render, resets cancellation state for each effect run, closes the IDE tab on unmount, awaits cleanup on terminal paths, and no longer relies on a suppressed process-exit listener.
 - Hardened permission settings edits against malformed lenient JSON: dynamic allow/deny/ask buckets are normalized to string arrays before map/filter/spread operations instead of relying on `@ts-expect-error`, preventing corrupted settings from throwing at runtime.
 - Fixed `/providers key <provider> <key>` session-only mode reporting success without applying the key; session keys now take effect immediately, and `--global` / `-g` flags are stripped before key parsing so flags can never be persisted as part of a credential.

@@ -1,12 +1,13 @@
-import sample from 'lodash-es/sample.js';
 import type * as React from 'react';
 import { useMemo } from 'react';
 import { Box, Text } from '../../ink.js';
 import { extractTag } from '../../utils/messages.js';
 import { MessageResponse } from '../MessageResponse.js';
 
+const SAVING_MESSAGES = ['Got it.', 'Good to know.', 'Noted.'];
+
 function getSavingMessage(): string {
-  return sample(['Got it.', 'Good to know.', 'Noted.']);
+  return SAVING_MESSAGES[Math.floor(Math.random() * SAVING_MESSAGES.length)] ?? 'Got it.';
 }
 
 type Props = {

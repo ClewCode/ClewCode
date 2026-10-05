@@ -86,6 +86,13 @@ export function DiffDialog({ messages, onDone }: Props): React.ReactNode {
     }
   }, [sources.length, sourceIndex]);
 
+  // Clamp selectedIndex when files shrink
+  useEffect(() => {
+    if (selectedIndex >= diffData.files.length) {
+      setSelectedIndex(Math.max(0, diffData.files.length - 1));
+    }
+  }, [diffData.files.length, selectedIndex]);
+
   // Reset file selection when source changes
   const prevSourceIndex = useRef(sourceIndex);
   useEffect(() => {

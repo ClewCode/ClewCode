@@ -3,7 +3,6 @@ import { Box, Text, type TextProps } from '../../ink.js';
 import { feature } from 'bun:bundle';
 import type * as React from 'react';
 import { useState } from 'react';
-import sample from 'lodash-es/sample.js';
 import { BLACK_CIRCLE, REFERENCE_MARK, TEARDROP_ASTERISK } from '../../constants/figures.js';
 import figures from 'figures';
 import { basename } from 'path';
@@ -308,7 +307,9 @@ function TurnDurationMessage({
   addMargin: boolean;
 }): React.ReactNode {
   const bg = useSelectedMessageBg();
-  const [verb] = useState(() => sample(TURN_COMPLETION_VERBS) ?? 'Worked');
+  const [verb] = useState(
+    () => TURN_COMPLETION_VERBS[Math.floor(Math.random() * TURN_COMPLETION_VERBS.length)] ?? 'Worked',
+  );
   const store = useAppStateStore();
   const [backgroundTaskSummary] = useState(() => {
     const tasks = store.getState().tasks;

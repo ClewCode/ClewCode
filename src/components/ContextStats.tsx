@@ -11,6 +11,7 @@ import { compactHealthLine, shortfallWarning } from '../services/compact/v2/heal
 import type { LocalJSXCommandOnDone } from '../types/command.js';
 import type { ContextData } from '../utils/analyzeContext.js';
 import { formatTokens } from '../utils/format.js';
+import { ProgressBar } from './design-system/ProgressBar.js';
 
 type Props = {
   data: ContextData;
@@ -99,13 +100,25 @@ export function ContextStats({ data, onClose }: Props): React.ReactNode {
     const sections: DetailSection[] = [];
 
     if (mcpTools.length > 0) {
-      const total = mcpTools.reduce((sum, tool) => sum + tool.tokens, 0);
-      const hasDeferred = mcpTools.some(tool => !tool.isLoaded);
+      const loaded = mcpTools.filter(tool => tool.isLoaded);
+      const deferred = mcpTools.filter(tool => !tool.isLoaded);
       sections.push({
         title: 'MCP tools',
         hint: '/mcp',
-        suffix: hasDeferred ? '(loaded on-demand)' : undefined,
-        items: [{ label: `${mcpTools.length} tools`, value: `${formatTokens(total)} tokens` }],
+        items: [
+          {
+            label: `${loaded.length} loaded tools`,
+            value: `${formatTokens(loaded.reduce((sum, tool) => sum + tool.tokens, 0))} tokens`,
+          },
+          ...(deferred.length > 0
+            ? [
+                {
+                  label: `${deferred.length} deferred tools`,
+                  value: `${formatTokens(deferred.reduce((sum, tool) => sum + tool.tokens, 0))} tokens (excluded from context)`,
+                },
+              ]
+            : []),
+        ],
       });
     }
 
@@ -213,7 +226,26 @@ export function ContextStats({ data, onClose }: Props): React.ReactNode {
         <Box flexDirection="column">
           <Text>{modelDisplayName(model)}</Text>
           <Text dimColor>{model}</Text>
-          <Text dimColor>{`${formatTokens(totalTokens)}/${formatTokens(rawMaxTokens)} tokens (${percentage}%)`}</Text>
+          <Box flexDirection="row">
+            <ProgressBar ratio={percentage / 100} width={20} fillColor="permission" />
+            <Text dimColor> {percentage}% context</Text>
+          </Box>
+          <Text
+            dimColor
+          >{`Estimated: ${formatTokens(totalTokens)}/${formatTokens(rawMaxTokens)} tokens (${percentage}%)`}</Text>
+          {data.apiUsage && (
+            <Text dimColor>
+              Last API input:{' '}
+              {formatTokens(
+                data.apiUsage.input_tokens +
+                  data.apiUsage.cache_creation_input_tokens +
+                  data.apiUsage.cache_read_input_tokens,
+              )}{' '}
+              tokens
+              {' · cached: '}
+              {formatTokens(data.apiUsage.cache_read_input_tokens)}
+            </Text>
+          )}
           <Text> </Text>
           <Text dimColor italic>
             Estimated usage by category

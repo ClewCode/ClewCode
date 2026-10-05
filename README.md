@@ -4,6 +4,8 @@ Clew Code is an AI coding agent for the terminal. It works in your repository, w
 
 Clew Code supports multiple AI providers. Choose the provider and model that fit your project.
 
+`/context` shows an estimated category breakdown and the last API input/cache usage separately. Deferred MCP tools are excluded from context totals. If token counting is unavailable, the inspector uses local estimates without generating model responses.
+
 - [Install](#install)
 - [Quick start](#quick-start)
 - [Choose a model](#choose-a-model)

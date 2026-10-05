@@ -12,7 +12,6 @@ import { Byline } from '../design-system/Byline.js';
 import { Dialog } from '../design-system/Dialog.js';
 import { KeyboardShortcutHint } from '../design-system/KeyboardShortcutHint.js';
 import { McpParsingWarnings } from './McpParsingWarnings.js';
-// @ts-expect-error - Phase3 typecheck auto (TS error suppression)
 import type { AgentMcpServerInfo, ServerInfo } from './types.js';
 
 type Props = {
@@ -90,7 +89,7 @@ export function MCPListPanel({
 
   // Built-in (dynamic) servers - rendered last
   const dynamicServers = React.useMemo(
-    () => (serversByScope.get('dynamic') ?? []).sort((a, b) => a.name.localeCompare(b.name)),
+    () => [...(serversByScope.get('dynamic') ?? [])].sort((a, b) => a.name.localeCompare(b.name)),
     [serversByScope],
   );
 
@@ -138,8 +137,14 @@ export function MCPListPanel({
   // Use configurable keybindings for navigation and selection
   useKeybindings(
     {
-      'confirm:previous': () => setSelectedIndex(prev => (prev === 0 ? selectableItems.length - 1 : prev - 1)),
-      'confirm:next': () => setSelectedIndex(prev => (prev === selectableItems.length - 1 ? 0 : prev + 1)),
+      'confirm:previous': () =>
+        setSelectedIndex(prev =>
+          selectableItems.length === 0 ? 0 : prev <= 0 ? selectableItems.length - 1 : prev - 1,
+        ),
+      'confirm:next': () =>
+        setSelectedIndex(prev =>
+          selectableItems.length === 0 ? 0 : prev >= selectableItems.length - 1 ? 0 : prev + 1,
+        ),
       'confirm:yes': handleSelect,
       'confirm:no': handleCancel,
     },

@@ -14,7 +14,6 @@ import {
 } from '../services/compact/autoCompact.js';
 import {
   countMessagesTokensWithAPI,
-  countTokensViaHaikuFallback,
   roughTokenCountEstimation,
   roughTokenCountEstimationForMessages,
 } from '../services/tokenEstimation.js';
@@ -41,10 +40,11 @@ import type {
 import { toolToAPISchema } from './api.js';
 import { filterInjectedMemoryFiles, getMemoryFiles } from './claudemd.js';
 import { getContextWindowForModel } from './context.js';
+import { countContextTokens } from './contextTokenCount.js';
 import { getCwd } from './cwd.js';
 import { logForDebugging } from './debug.js';
 import { isEnvTruthy } from './envUtils.js';
-import { errorMessage, toError } from './errors.js';
+import { toError } from './errors.js';
 import { logError } from './log.js';
 import { normalizeMessagesForAPI } from './messages.js';
 import { getRuntimeMainLoopModel } from './model/model.js';
@@ -72,28 +72,9 @@ async function countTokensWithFallback(
   // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
   tools: Anthropic.Beta.Messages.BetaToolUnion[],
 ): Promise<number | null> {
-  try {
-    const result = await countMessagesTokensWithAPI(messages, tools);
-    if (result !== null) {
-      return result;
-    }
-    logForDebugging(`countTokensWithFallback: API returned null, trying haiku fallback (${tools.length} tools)`);
-  } catch (err) {
-    logForDebugging(`countTokensWithFallback: API failed: ${errorMessage(err)}`);
-    logError(err);
-  }
-
-  try {
-    const fallbackResult = await countTokensViaHaikuFallback(messages, tools);
-    if (fallbackResult === null) {
-      logForDebugging(`countTokensWithFallback: haiku fallback also returned null (${tools.length} tools)`);
-    }
-    return fallbackResult;
-  } catch (err) {
-    logForDebugging(`countTokensWithFallback: haiku fallback failed: ${errorMessage(err)}`);
-    logError(err);
-    return null;
-  }
+  // Inspecting context must never generate a billable completion. Callers
+  // already provide local estimates when the count endpoint is unavailable.
+  return countContextTokens(() => countMessagesTokensWithAPI(messages, tools));
 }
 
 interface ContextCategory {
@@ -1059,14 +1040,9 @@ export async function analyzeContextUsage(
   // This uses the same source of truth as the status line for consistency
   const apiUsage = getCurrentUsage(originalMessages ?? messages);
 
-  // When API usage is available, use it for total to match status line calculation
-  // Status line uses: input_tokens + cache_creation_input_tokens + cache_read_input_tokens
-  const totalFromAPI = apiUsage
-    ? apiUsage.input_tokens + apiUsage.cache_creation_input_tokens + apiUsage.cache_read_input_tokens
-    : null;
-
-  // Use API total if available, otherwise fall back to estimated total
-  const finalTotalTokens = totalFromAPI ?? totalIncludingReserved;
+  // The grid and categories describe the current local estimate. The last
+  // API request is a different snapshot and is displayed separately by consumers.
+  const finalTotalTokens = totalIncludingReserved;
 
   // Pre-calculate grid based on model context window and terminal width
   // For narrow screens (< 80 cols), use 5x5 for 200k models, 5x10 for 1M+ models

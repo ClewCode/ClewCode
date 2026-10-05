@@ -121,7 +121,12 @@ How to use the statusLine command:
    if (branch) parts.push(branch);
    if (model) parts.push(model);
    if (style) parts.push(style);
-   if (ctx !== undefined && ctx !== null && ctx !== '') parts.push('ctx:' + Math.round(Number(ctx)) + '%');
+   if (ctx !== undefined && ctx !== null && ctx !== '') {
+     const n = Number(ctx);
+     parts.push('ctx:' + (n < 10 ? n.toFixed(1) : Math.round(n)) + '%');
+   } else {
+     parts.push('ctx:…');
+   }
    process.stdout.write(parts.join(' | ') + '\\n');
    ------------------------------------------------------------------
    Then set the command to: \`node ~/.clew/statusline.mjs\` (use an absolute path on Windows, e.g.

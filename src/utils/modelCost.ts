@@ -1556,19 +1556,19 @@ function tokensToUSDCost(modelCosts: ModelCosts, usage: Usage): number {
 /**
  * @[MULTI_PROVIDER] Get the cost rates for a model.
  * Uses PROVIDER_PRICING table for non-Anthropic models.
- * Speed info is only needed for Opus 4.6 fast-mode pricing.
  */
-export function getModelCosts(model: string, speedInfo?: { speed?: string }): ModelCosts {
-  // ponytail: any model with "free" in its ID costs $0
-  if (model.toLowerCase().includes('free'))
-    return {
-      inputTokens: 0,
-      outputTokens: 0,
-      promptCacheWriteTokens: 0,
-      promptCacheReadTokens: 0,
-      webSearchRequests: 0,
-      isFree: true,
-    };
+const FREE_MODEL_COSTS: ModelCosts = {
+  inputTokens: 0,
+  outputTokens: 0,
+  promptCacheWriteTokens: 0,
+  promptCacheReadTokens: 0,
+  webSearchRequests: 0,
+  isFree: true,
+};
+
+export function getModelCosts(model: string): ModelCosts {
+  // ponytail: `:free` suffix (OpenRouter); exact isFree entries resolve via PROVIDER_PRICING below
+  if (model.toLowerCase().endsWith(':free')) return FREE_MODEL_COSTS;
   const shortName = getCanonicalName(model);
 
   // Check if this is an Opus 4.6 model with fast mode active.
@@ -1630,8 +1630,8 @@ function lookupProviderPricing(model: string): ModelCosts | null {
  * Check if a model is free (no cost).
  */
 export function isModelFree(model: string): boolean {
-  // ponytail: any model with "free" in its ID costs $0
-  if (model.toLowerCase().includes('free')) return true;
+  // ponytail: `:free` suffix only; lookupProviderPricing covers table entries
+  if (model.toLowerCase().endsWith(':free')) return true;
   const costs = lookupProviderPricing(model);
   return costs?.isFree ?? false;
 }
@@ -1667,8 +1667,7 @@ function trackUnknownModelCost(model: string, shortName: ModelShortName): void {
  * @deprecated Use `calculateUSDCostFromProviderUsage()` with `fromAnthropicUsage()` instead.
  */
 export function calculateUSDCost(resolvedModel: string, usage: Usage): number {
-  // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
-  const modelCosts = getModelCosts(resolvedModel, { speed: usage.speed });
+  const modelCosts = getModelCosts(resolvedModel);
   return tokensToUSDCost(modelCosts, usage);
 }
 

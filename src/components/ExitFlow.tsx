@@ -1,12 +1,10 @@
-import sample from 'lodash-es/sample.js';
-import type React from 'react';
 import { gracefulShutdown } from '../utils/gracefulShutdown.js';
 import { WorktreeExitDialog } from './WorktreeExitDialog.js';
 
 const GOODBYE_MESSAGES = ['Goodbye!', 'See ya!', 'Bye!', 'Catch you later!'];
 
 function getRandomGoodbyeMessage(): string {
-  return sample(GOODBYE_MESSAGES) ?? 'Goodbye!';
+  return GOODBYE_MESSAGES[Math.floor(Math.random() * GOODBYE_MESSAGES.length)] ?? 'Goodbye!';
 }
 
 type Props = {

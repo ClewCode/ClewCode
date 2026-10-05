@@ -433,7 +433,7 @@ export function Config({
           promptSuggestionEnabled: enabled,
         }));
         updateSettingsForSource('userSettings', {
-          promptSuggestionEnabled: enabled ? undefined : false,
+          promptSuggestionEnabled: !!enabled,
         });
       },
     },

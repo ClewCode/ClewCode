@@ -61,7 +61,10 @@ export function shouldEnablePromptSuggestion(): boolean {
     return false;
   }
 
-  const enabled = getInitialSettings()?.promptSuggestionEnabled !== false;
+  // Prompt suggestions are an extra LLM request after every completed turn.
+  // Keep them opt-in so a normal session never spends tokens on background
+  // speculation unless the user explicitly enables the setting or env flag.
+  const enabled = getInitialSettings()?.promptSuggestionEnabled === true;
   logEvent('tengu_prompt_suggestion_init', {
     enabled,
     source: 'setting' as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,

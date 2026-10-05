@@ -6,6 +6,11 @@ import { isEnvTruthy } from './envUtils.js';
 import { resolveAntModel } from './model/antModels.js';
 import { getCanonicalName } from './model/canonicalModelName.js';
 import { getModelCapability } from './model/modelCapabilities.js';
+import {
+  fetchOpenRouterCapabilityCatalog,
+  findOpenRouterCapabilities,
+  getCachedOpenRouterCatalog,
+} from './model/openRouterCapabilities.js';
 
 // Model context window size (200k tokens for all models right now)
 export const MODEL_CONTEXT_WINDOW_DEFAULT = 200_000;
@@ -99,6 +104,15 @@ export function getContextWindowForModel(model: string, betas?: string[]): numbe
   if (contextFromRegistry !== null) {
     return contextFromRegistry;
   }
+
+  // OpenCode and other gateways may expose models that are absent from the
+  // local registry. Reuse the OpenRouter catalog already used by the model
+  // picker, and warm it in the background when this is the first lookup.
+  const openRouterModel = findOpenRouterCapabilities(model, getCachedOpenRouterCatalog());
+  if (openRouterModel?.contextWindow && openRouterModel.contextWindow > 0) {
+    return openRouterModel.contextWindow;
+  }
+  void fetchOpenRouterCapabilityCatalog();
 
   return MODEL_CONTEXT_WINDOW_DEFAULT;
 }

@@ -309,7 +309,6 @@ export async function setup(
       // Defer to next tick so the git subprocess spawn runs after first render
       // rather than during the setup() microtask window.
       setImmediate(() => {
-        // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
         void import('./utils/attributionHooks.js').then(({ registerAttributionHooks }) => {
           registerAttributionHooks(); // Register attribution tracking hooks (ant-only feature)
         });

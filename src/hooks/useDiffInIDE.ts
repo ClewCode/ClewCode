@@ -353,6 +353,9 @@ function isRejectedMessage(data: unknown): data is { text: 'DIFF_REJECTED' } {
 
 function isSaveMessage(data: unknown): data is [{ text: 'FILE_SAVED' }, { text: string }] {
   return (
-    Array.isArray(data) && data[0]?.type === 'text' && data[0].text === 'FILE_SAVED' && typeof data[1].text === 'string'
+    Array.isArray(data) &&
+    data[0]?.type === 'text' &&
+    data[0].text === 'FILE_SAVED' &&
+    typeof data[1]?.text === 'string'
   );
 }

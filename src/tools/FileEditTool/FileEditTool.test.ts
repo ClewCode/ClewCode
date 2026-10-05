@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import {
   findActualString,
+  isSafeToApplyStaleEdit,
   LEFT_DOUBLE_CURLY_QUOTE,
   LEFT_SINGLE_CURLY_QUOTE,
   normalizeQuotes,
@@ -9,6 +10,19 @@ import {
   RIGHT_SINGLE_CURLY_QUOTE,
   stripTrailingWhitespace,
 } from './utils.js';
+
+describe('FileEditTool stale-read recovery', () => {
+  it('allows an edit when only an unrelated part of the file changed', () => {
+    expect(isSafeToApplyStaleEdit('const target = 1;\n// formatted elsewhere\n', 'const target = 1;', false)).toBe(
+      true,
+    );
+  });
+
+  it('keeps the stale-write guard when the edit target changed or is ambiguous', () => {
+    expect(isSafeToApplyStaleEdit('const target = 2;\n', 'const target = 1;', false)).toBe(false);
+    expect(isSafeToApplyStaleEdit('const target = 1;\nconst target = 1;\n', 'const target = 1;', false)).toBe(false);
+  });
+});
 
 describe('FileEditTool quote normalization', () => {
   it('converts single and double curly quotes to straight quotes', () => {

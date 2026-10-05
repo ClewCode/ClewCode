@@ -1,6 +1,5 @@
 import ansis from 'ansis';
 import { marked, type Token, type Tokens } from 'marked';
-import { color } from '../components/design-system/color.js';
 import { BLOCKQUOTE_BAR } from '../constants/figures.js';
 import { stringWidth } from '../ink/stringWidth.js';
 import { supportsHyperlinks } from '../ink/supports-hyperlinks.js';
@@ -92,8 +91,10 @@ export function formatToken(
       return highlight.highlight(decodedText, { language }) + EOL;
     }
     case 'codespan': {
-      // inline code
-      return color('permission', theme)(decodeHtmlEntities(token.text));
+      // Inline code must inherit the surrounding Ansi/Text style. Injecting
+      // an explicit color here also emits a reset sequence, which cancels a
+      // parent's dim/color state and makes prose alternate brightness.
+      return decodeHtmlEntities(token.text);
     }
     case 'em':
       return ansis.italic((token.tokens ?? []).map(_ => formatToken(_, theme, 0, null, parent, highlight)).join(''));

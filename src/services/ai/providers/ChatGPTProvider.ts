@@ -310,11 +310,15 @@ export class ChatGPTResponsesAdapter implements ProviderAdapter {
   }
 
   private convertToResponses(params: BetaMessageStreamParams, stream: boolean): Record<string, unknown> {
+    const effort = (params as any).output_config?.effort;
+    const reasoningEffort = effort === 'low' || effort === 'medium' || effort === 'high' ? effort : undefined;
     return {
       model: params.model,
       input: convertMessagesToResponsesInput(params.messages),
       instructions: convertSystemPrompt(params.system),
       ...(params.tools?.length ? { tools: convertTools(params.tools) } : {}),
+      ...(params.max_tokens !== undefined ? { max_output_tokens: params.max_tokens } : {}),
+      ...(reasoningEffort ? { reasoning: { effort: reasoningEffort } } : {}),
       ...(params.top_p !== undefined ? { top_p: params.top_p } : {}),
       stream,
     };

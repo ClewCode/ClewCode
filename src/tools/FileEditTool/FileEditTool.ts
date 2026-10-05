@@ -50,7 +50,13 @@ import {
   renderToolUseRejectedMessage,
   userFacingName,
 } from './UI.js';
-import { areFileEditsInputsEquivalent, findActualString, getPatchForEdit, preserveQuoteStyle } from './utils.js';
+import {
+  areFileEditsInputsEquivalent,
+  findActualString,
+  getPatchForEdit,
+  isSafeToApplyStaleEdit,
+  preserveQuoteStyle,
+} from './utils.js';
 
 // V8/Bun string length limit is ~2^30 characters (~1 billion). For typical
 // ASCII/Latin-1 files, 1 byte on disk = 1 character, so 1 GiB in stat bytes
@@ -276,9 +282,7 @@ export const FileEditTool = buildTool({
         const contentUnchanged = isFullRead
           ? fileContent === readTimestamp.content
           : fileContent.includes(readTimestamp.content);
-        if (contentUnchanged) {
-          // Content unchanged, safe to proceed
-        } else {
+        if (!contentUnchanged && !isSafeToApplyStaleEdit(fileContent, old_string, replace_all)) {
           return {
             result: false,
             behavior: 'ask',
@@ -427,7 +431,7 @@ export const FileEditTool = buildTool({
         // compare content as a fallback to avoid false positives.
         const isFullRead = lastRead && lastRead.offset === undefined && lastRead.limit === undefined;
         const contentUnchanged = isFullRead && originalFileContents === lastRead.content;
-        if (!contentUnchanged) {
+        if (!contentUnchanged && !isSafeToApplyStaleEdit(originalFileContents, old_string, replace_all)) {
           throw new Error(FILE_UNEXPECTEDLY_MODIFIED_ERROR);
         }
       }
@@ -524,15 +528,6 @@ export const FileEditTool = buildTool({
       replaceAll: replace_all,
       ...(gitDiff && { gitDiff }),
     };
-    // Taste + Shining hooks
-    if (userModified) {
-      try {
-        const { hookUserCorrection } = await import('../../taste/hooks.js');
-        hookUserCorrection(actualOldString, actualNewString, absoluteFilePath);
-      } catch {
-        /* best-effort: auxiliary failure must not affect the primary flow */
-      }
-    }
     try {
       const { observe } = await import('../../shining/observer.js');
       observe({ type: 'file_changed', path: absoluteFilePath });

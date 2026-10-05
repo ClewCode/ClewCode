@@ -38,4 +38,18 @@ describe('OpenRouter capability fallback', () => {
       supportsReasoning: undefined,
     });
   });
+
+  test('matches free gateway suffixes to the catalog context window', () => {
+    const freeCatalog = parseOpenRouterCapabilityCatalog({
+      data: [
+        {
+          id: 'meta/muse-spark-1.3-contributor',
+          name: 'Meta: Muse Spark 1.3 Contributor',
+          context_length: 1_048_576,
+        },
+      ],
+    });
+
+    expect(findOpenRouterCapabilities('muse-spark-1.3-contributor-free', freeCatalog)?.contextWindow).toBe(1_048_576);
+  });
 });

@@ -93,7 +93,11 @@ function formatContextAsMarkdownTable(data: ContextData): string {
 
   let output = `## Context Usage\n\n`;
   output += `**Model:** ${model}  \n`;
-  output += `**Tokens:** ${formatTokens(totalTokens)} / ${formatTokens(rawMaxTokens)} (${percentage}%)\n`;
+  output += `**Estimated tokens:** ${formatTokens(totalTokens)} / ${formatTokens(rawMaxTokens)} (${percentage}%)\n`;
+  if (data.apiUsage) {
+    const usage = data.apiUsage;
+    output += `**Last API input:** ${formatTokens(usage.input_tokens + usage.cache_creation_input_tokens + usage.cache_read_input_tokens)} tokens (cached: ${formatTokens(usage.cache_read_input_tokens)})\n`;
+  }
 
   output += '\n';
 
@@ -109,7 +113,7 @@ function formatContextAsMarkdownTable(data: ContextData): string {
 
     for (const cat of visibleCategories) {
       const percentDisplay = ((cat.tokens / rawMaxTokens) * 100).toFixed(1);
-      output += `| ${cat.name} | ${formatTokens(cat.tokens)} | ${percentDisplay}% |\n`;
+      output += `| ${cat.name} | ${formatTokens(cat.tokens)} | ${cat.isDeferred ? 'excluded' : `${percentDisplay}%`} |\n`;
     }
 
     const freeSpaceCategory = categories.find(c => c.name === 'Free space');

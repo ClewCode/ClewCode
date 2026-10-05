@@ -269,7 +269,9 @@ export class ToolGateway {
         const { query } = input as { query: string };
         output = await this.executeMemorySearch(query);
       } else {
-        throw new Error(`Tool execution for '${toolName}' not implemented in Gateway.`);
+        // ponytail: preAuthorize() denies unknown tools upstream;
+        // fail closed here instead of a misleading "not implemented" throw
+        throw new Error(`Tool '${toolName}' denied by gateway`);
       }
 
       // Cap tool output so one chatty tool cannot blow the agent context.

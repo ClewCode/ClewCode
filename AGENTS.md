@@ -4,6 +4,8 @@ This file provides guidance to Clew Code when working with code in this reposito
 
 This is the canonical architecture and day-to-day development guide for this repository.
 
+Context diagnostics: `/context` totals and grid use the same local category estimates; last API input/cache usage is a separate snapshot. Deferred tools are excluded. Never fall back to generating completions merely to count tokens in the inspector.
+
 ## Build / Test / Lint (Bun only)
 
 ```bash

@@ -126,7 +126,11 @@ export function AsyncAgentDetailDialog({ agent, onDone, onKillAgent, onBack }: P
                   Progress
                 </Text>
                 {agent.progress.recentActivities.map((activity, i) => (
-                  <Text key={i} dimColor={i < agent.progress!.recentActivities!.length - 1} wrap="truncate-end">
+                  <Text
+                    key={activity.activityDescription ?? `${activity.toolName}-${i}`}
+                    dimColor={i < agent.progress!.recentActivities!.length - 1}
+                    wrap="truncate-end"
+                  >
                     {i === agent.progress!.recentActivities!.length - 1 ? '› ' : '  '}
                     {renderToolActivity(activity, tools, theme)}
                   </Text>

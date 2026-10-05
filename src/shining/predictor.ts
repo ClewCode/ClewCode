@@ -90,19 +90,11 @@ function heuristicPredict(
 export async function predict(ctx: ShiningContext = {}): Promise<Premonition[]> {
   const events = getRecentEvents();
   const candidates = heuristicPredict(ctx, events);
-  // Taste prior: fetch active taste rules for boosting
-  let tasteRules: any[] = [];
-  try {
-    const { getTasteStore } = await import('../taste/store/taste-store.js');
-    tasteRules = await getTasteStore().list({ status: 'active' as any });
-  } catch {
-    /* best-effort: auxiliary failure must not affect the primary flow */
-  }
   const withScores: Premonition[] = candidates.map(c => ({
     id: id(),
     createdAt: Date.now(),
     ...c,
-    confidence: scorePremonition(c, tasteRules),
+    confidence: scorePremonition(c),
   }));
   const ranked = rank(withScores);
   for (const p of ranked) save(p);

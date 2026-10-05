@@ -50,7 +50,7 @@ export function parseOpenRouterCapabilityCatalog(raw: unknown): FetchedModel[] {
 function normalizedModelKey(id: string): string {
   const suffix = id.includes('/') ? id.slice(id.lastIndexOf('/') + 1) : id;
   return suffix
-    .replace(/:free$/i, '')
+    .replace(/(?:[-_:]|\/)free$/i, '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-');
 }

@@ -99,7 +99,7 @@ export function MessageSelector({
     ],
     [messages, currentUUID],
   );
-  const [selectedIndex, setSelectedIndex] = useState(messageOptions.length - 1);
+  const [selectedIndex, setSelectedIndex] = useState(Math.max(0, messageOptions.length - 1));
 
   // Orient the selected message as the middle of the visible options
   const firstVisibleIndex = Math.max(

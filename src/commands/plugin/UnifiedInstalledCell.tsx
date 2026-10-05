@@ -2,7 +2,6 @@ import figures from 'figures';
 import type * as React from 'react';
 import { Box, color, Text, useTheme } from '../../ink.js';
 import { plural } from '../../utils/stringUtils.js';
-// @ts-expect-error - Phase3 typecheck auto (TS error suppression)
 import type { UnifiedInstalledItem } from './unifiedTypes.js';
 
 type Props = {

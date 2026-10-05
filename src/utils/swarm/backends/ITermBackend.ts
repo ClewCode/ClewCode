@@ -246,10 +246,8 @@ export class ITermBackend implements PaneBackend {
   /**
    * No-op for iTerm2 - pane balancing is handled automatically.
    */
-  async rebalancePanes(_windowTarget: string, _hasLeader: boolean): Promise<void> {
-    // iTerm2 handles pane balancing automatically
-    logForDebugging('[ITermBackend] Pane rebalancing not implemented for iTerm2');
-  }
+  // ponytail: no-op, iTerm2 balances panes automatically
+  async rebalancePanes(_windowTarget: string, _hasLeader: boolean): Promise<void> {}
 
   /**
    * Kills/closes a specific pane using the it2 CLI.

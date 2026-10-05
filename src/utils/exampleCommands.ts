@@ -1,5 +1,6 @@
 import memoize from 'lodash-es/memoize.js';
-import sample from 'lodash-es/sample.js';
+
+// ponytail: one-liner replaces lodash sample — drop if lodash goes entirely
 import { getCwd } from '../utils/cwd.js';
 import { getCurrentProjectConfig, saveCurrentProjectConfig } from './config.js';
 import { env } from './env.js';
@@ -127,7 +128,9 @@ const ONE_WEEK_IN_MS = 7 * 24 * 60 * 60 * 1000;
 
 export const getExampleCommandFromCache = memoize(() => {
   const projectConfig = getCurrentProjectConfig();
-  const frequentFile = projectConfig.exampleFiles?.length ? sample(projectConfig.exampleFiles) : '<filepath>';
+  const frequentFile = projectConfig.exampleFiles?.length
+    ? projectConfig.exampleFiles[Math.floor(Math.random() * projectConfig.exampleFiles.length)]
+    : '<filepath>';
 
   const commands = [
     'fix lint errors',
@@ -140,7 +143,7 @@ export const getExampleCommandFromCache = memoize(() => {
     'create a util logging.py that...',
   ];
 
-  return `Try "${sample(commands)}"`;
+  return `Try "${commands[Math.floor(Math.random() * commands.length)]}"`;
 });
 
 export const refreshExampleCommands = memoize(async (): Promise<void> => {

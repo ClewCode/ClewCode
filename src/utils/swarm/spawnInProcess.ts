@@ -13,7 +13,6 @@
  * 4. Returning spawn result for backend
  */
 
-import sample from 'lodash-es/sample.js';
 import { getSessionId } from '../../bootstrap/state.js';
 import { getSpinnerVerbs } from '../../constants/spinnerVerbs.js';
 import { getTurnCompletionVerbs } from '../../constants/turnCompletionVerbs.js';
@@ -154,8 +153,8 @@ export async function spawnInProcessTeammate(
       model,
       abortController,
       awaitingPlanApproval: false,
-      spinnerVerb: sample(getSpinnerVerbs()),
-      pastTenseVerb: sample(getTurnCompletionVerbs()),
+      spinnerVerb: getSpinnerVerbs()[Math.floor(Math.random() * getSpinnerVerbs().length)],
+      pastTenseVerb: getTurnCompletionVerbs()[Math.floor(Math.random() * getTurnCompletionVerbs().length)],
       permissionMode: planModeRequired ? 'plan' : 'default',
       isIdle: false,
       shutdownRequested: false,

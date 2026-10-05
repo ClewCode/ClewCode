@@ -84,14 +84,10 @@ export function UserTextMessage({
   // The require() below DCEs when both flags are off. startsWith (not
   // includes) and before the includes-checks below: defense-in-depth if
   // the sanitizer were ever weakened.
+  // ponytail: KAIROS webhook message ant-only (stub deleted), re-add require when real impl ships
   if (feature('KAIROS')) {
     if (param.text.startsWith('<github-webhook-activity>')) {
-      /* eslint-disable @typescript-eslint/no-require-imports */
-      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
-      const { UserGitHubWebhookMessage } =
-        require('./UserGitHubWebhookMessage.js') as typeof import('./UserGitHubWebhookMessage.js');
-      /* eslint-enable @typescript-eslint/no-require-imports */
-      return <UserGitHubWebhookMessage addMargin={addMargin} param={param} />;
+      return null;
     }
   }
 
@@ -127,28 +123,20 @@ export function UserTextMessage({
   // Fork child's first message: collapse the rules/format boilerplate, show
   // only the directive. FORK_BOILERPLATE_TAG is inlined so the import doesn't
   // ship in external builds where feature('FORK_SUBAGENT') is false.
+  // ponytail: FORK_SUBAGENT boilerplate message ant-only (stub deleted)
   if (feature('FORK_SUBAGENT')) {
     if (param.text.includes('<fork-boilerplate>')) {
-      /* eslint-disable @typescript-eslint/no-require-imports */
-      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
-      const { UserForkBoilerplateMessage } =
-        require('./UserForkBoilerplateMessage.js') as typeof import('./UserForkBoilerplateMessage.js');
-      /* eslint-enable @typescript-eslint/no-require-imports */
-      return <UserForkBoilerplateMessage addMargin={addMargin} param={param} />;
+      return null;
     }
   }
 
   // Cross-session UDS message (from another Claude session's SendMessage).
   // CROSS_SESSION_MESSAGE_TAG is inlined so the import doesn't ship in
   // external builds where feature('UDS_INBOX') is false.
+  // ponytail: UDS_INBOX cross-session message ant-only (stub deleted)
   if (feature('UDS_INBOX')) {
     if (param.text.includes('<cross-session-message')) {
-      /* eslint-disable @typescript-eslint/no-require-imports */
-      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
-      const { UserCrossSessionMessage } =
-        require('./UserCrossSessionMessage.js') as typeof import('./UserCrossSessionMessage.js');
-      /* eslint-enable @typescript-eslint/no-require-imports */
-      return <UserCrossSessionMessage addMargin={addMargin} param={param} />;
+      return null;
     }
   }
 

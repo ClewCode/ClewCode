@@ -130,7 +130,11 @@ export function InProcessTeammateDetailDialog({
                 Progress
               </Text>
               {teammate.progress.recentActivities.map((activity, i) => (
-                <Text key={i} dimColor={i < teammate.progress!.recentActivities!.length - 1} wrap="truncate-end">
+                <Text
+                  key={activity.activityDescription ?? `${activity.toolName}-${i}`}
+                  dimColor={i < teammate.progress!.recentActivities!.length - 1}
+                  wrap="truncate-end"
+                >
                   {i === teammate.progress!.recentActivities!.length - 1 ? '› ' : '  '}
                   {renderToolActivity(activity, tools, theme)}
                 </Text>

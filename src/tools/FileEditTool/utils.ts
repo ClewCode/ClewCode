@@ -81,6 +81,18 @@ export function findActualString(fileContent: string, searchString: string): str
 }
 
 /**
+ * A file changed after it was read, but an edit remains safe when its target
+ * still exists in the latest content. A single replacement must be unique;
+ * replace_all explicitly permits multiple matches.
+ */
+export function isSafeToApplyStaleEdit(fileContent: string, oldString: string, replaceAll: boolean): boolean {
+  const actualOldString = findActualString(fileContent, oldString);
+  if (!actualOldString) return false;
+
+  return replaceAll || fileContent.split(actualOldString).length === 2;
+}
+
+/**
  * When old_string matched via quote normalization (curly quotes in file,
  * straight quotes from model), apply the same curly quote style to new_string
  * so the edit preserves the file's typography.

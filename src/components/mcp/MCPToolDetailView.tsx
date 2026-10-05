@@ -4,7 +4,6 @@ import { extractMcpToolDisplayName, getMcpDisplayName } from '../../services/mcp
 import type { Tool } from '../../Tool.js';
 import { ConfigurableShortcutHint } from '../ConfigurableShortcutHint.js';
 import { Dialog } from '../design-system/Dialog.js';
-// @ts-expect-error - Phase3 typecheck auto (TS error suppression)
 import type { ServerInfo } from './types.js';
 
 type Props = {

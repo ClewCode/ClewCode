@@ -25,6 +25,12 @@ export function hasThinkingBufferContent(thinking: string): boolean {
   return thinking.trim().length > 0;
 }
 
+export function getThinkingDisplayText(thinking: string, maxLines = 4): string {
+  const lines = thinking.trim().split('\n').filter(Boolean);
+  if (lines.length <= maxLines) return lines.join('\n');
+  return [`… ${lines.length - maxLines} earlier updates`, ...lines.slice(-maxLines)].join('\n');
+}
+
 export function getCollapsedThinkingPreview(thinking: string): string | null {
   const lines = thinking.split('\n');
   if (thinking.length < 150 && lines.length < 3) return null;
@@ -62,6 +68,7 @@ export function AssistantThinkingMessage({
   const spinnerGlyph = isStreaming ? THINKING_SPINNER_FRAMES[frame] : '∴';
   const shouldShowFullThinking = isStreaming || isTranscriptMode || verbose;
   const label = `${spinnerGlyph} Thinking`;
+  const displayThinking = getThinkingDisplayText(thinking);
 
   if (!shouldShowFullThinking) {
     if (!showThinkingPreview) {
@@ -98,7 +105,7 @@ export function AssistantThinkingMessage({
         {label}…
       </Text>
       <Box paddingLeft={2}>
-        <Markdown dimColor>{thinking}</Markdown>
+        <Markdown dimColor>{displayThinking}</Markdown>
       </Box>
     </Box>
   );

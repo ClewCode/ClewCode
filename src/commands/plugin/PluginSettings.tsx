@@ -24,7 +24,6 @@ import { ManageMarketplaces } from './ManageMarketplaces.js';
 import { ManagePlugins } from './ManagePlugins.js';
 import { formatErrorMessage, getErrorGuidance } from './PluginErrors.js';
 import { type ParsedCommand, parsePluginArgs } from './parseArgs.js';
-// @ts-expect-error - Phase3 typecheck auto (TS error suppression)
 import type { PluginSettingsProps, ViewState } from './types.js';
 import { ValidatePlugin } from './ValidatePlugin.js';
 
