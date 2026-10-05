@@ -26,7 +26,6 @@ import { TOOL_SEARCH_TOOL_NAME } from 'src/tools/ToolSearchTool/prompt.js';
 import { SYNTHETIC_OUTPUT_TOOL_NAME } from 'src/tools/SyntheticOutputTool/SyntheticOutputTool.js';
 import { ENTER_WORKTREE_TOOL_NAME } from 'src/tools/EnterWorktreeTool/constants.js';
 import { EXIT_WORKTREE_TOOL_NAME } from 'src/tools/ExitWorktreeTool/constants.js';
-import { WORKFLOW_TOOL_NAME } from 'src/tools/WorkflowTool/constants.js';
 import { SCHEDULE_TOOL_NAME } from 'src/tools/ScheduleTool/prompt.js';
 
 export const ALL_AGENT_DISALLOWED_TOOLS = new Set([
@@ -37,8 +36,6 @@ export const ALL_AGENT_DISALLOWED_TOOLS = new Set([
   ...(process.env.USER_TYPE === 'ant' ? [] : [AGENT_TOOL_NAME]),
   ASK_USER_QUESTION_TOOL_NAME,
   TASK_STOP_TOOL_NAME,
-  // Prevent recursive workflow execution inside subagents.
-  ...(feature('WORKFLOW_SCRIPTS') ? [WORKFLOW_TOOL_NAME] : []),
 ]);
 
 export const CUSTOM_AGENT_DISALLOWED_TOOLS = new Set([...ALL_AGENT_DISALLOWED_TOOLS]);

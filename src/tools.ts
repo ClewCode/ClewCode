@@ -30,12 +30,6 @@ const getVerifyPlanExecutionTool = () =>
   process.env.CLEW_CODE_VERIFY_PLAN === 'true'
     ? require('./tools/VerifyPlanExecutionTool/VerifyPlanExecutionTool.js').VerifyPlanExecutionTool
     : null;
-const getWorkflowTool = () => {
-  if (feature('WORKFLOW_SCRIPTS')) {
-    return require('./tools/WorkflowTool/WorkflowTool.js').WorkflowTool;
-  }
-  return null;
-};
 /* eslint-enable custom-rules/no-process-env-top-level, @typescript-eslint/no-require-imports */
 
 // Stable static imports
@@ -134,7 +128,6 @@ export function getAllBaseTools(): Tools {
   const remoteTriggerTool = getRemoteTriggerTool();
   const monitorTool = getMonitorTool();
   const verifyPlanExecutionTool = getVerifyPlanExecutionTool();
-  const workflowTool = getWorkflowTool();
 
   return [
     BashTool,
@@ -169,7 +162,6 @@ export function getAllBaseTools(): Tools {
     ...(isAgentSwarmsEnabled() ? [TeamCreateTool, TeamDeleteTool, RequestShutdownTool] : []),
     ...(isAgentSwarmsEnabled() ? [SubscribePrActivityTool, UnsubscribePrActivityTool] : []),
     ...(verifyPlanExecutionTool ? [verifyPlanExecutionTool] : []),
-    ...(workflowTool ? [workflowTool] : []),
     ...cronTools,
     ...(remoteTriggerTool ? [remoteTriggerTool] : []),
     ...(monitorTool ? [monitorTool] : []),

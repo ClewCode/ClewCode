@@ -2663,8 +2663,11 @@ export function handleMessageFromStream(
         case 'thinking':
         case 'redacted_thinking':
           onSetStreamMode('thinking');
-          onStreamingThinking?.(() => ({
-            thinking: '',
+          onStreamingThinking?.(current => ({
+            // A tool loop can produce several thinking blocks in one user
+            // turn. Keep one live buffer so the UI does not render a new
+            // "Thinking" row for every provider block.
+            thinking: current?.thinking ? `${current.thinking}\n` : '',
             isStreaming: true,
             streamingEndedAt: undefined,
           }));
@@ -4235,6 +4238,28 @@ export function isThinkingMessage(message: Message): boolean {
   if (message.type !== 'assistant') return false;
   if (!Array.isArray(message.message.content)) return false;
   return message.message.content.every(block => block.type === 'thinking' || block.type === 'redacted_thinking');
+}
+
+/**
+ * Detect provider retries that emit the same adjacent text-only assistant
+ * message more than once. Tool/thinking messages are deliberately excluded:
+ * their repeated blocks may carry distinct protocol state.
+ */
+export function isDuplicateAdjacentAssistantText(previous: Message | undefined, next: Message): boolean {
+  if (previous?.type !== 'assistant' || next.type !== 'assistant') return false;
+
+  const textOnly = (message: AssistantMessage): string | null => {
+    if (!Array.isArray(message.message.content) || message.message.content.length === 0) return null;
+    if (message.message.content.some(block => block.type !== 'text')) return null;
+    const text = message.message.content
+      .map(block => (block.type === 'text' ? block.text : ''))
+      .join('')
+      .trim();
+    return text || null;
+  };
+
+  const previousText = textOnly(previous);
+  return previousText !== null && previousText === textOnly(next);
 }
 
 /**

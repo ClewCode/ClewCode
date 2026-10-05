@@ -82,7 +82,6 @@ import sandboxToggle from './commands/sandbox-toggle/index.js';
 import chrome from './commands/chrome/index.js';
 import stickers from './commands/stickers/index.js';
 import goal from './commands/goal/index.js';
-import taste from './commands/taste/index.js';
 import { repomap } from './commands/repomap/index.js';
 import { codeSearch } from './commands/codeSearch/index.js';
 import bg from './commands/bg/index.js';
@@ -194,7 +193,6 @@ const COMMANDS = memoize((): Command[] => [
   explorer,
   files,
   goal,
-  taste,
   repomap,
   codeSearch,
   heapDump,

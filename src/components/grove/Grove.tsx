@@ -18,7 +18,7 @@ import { Byline } from '../design-system/Byline.js';
 import { Dialog } from '../design-system/Dialog.js';
 import { KeyboardShortcutHint } from '../design-system/KeyboardShortcutHint.js';
 
-export type GroveDecision = 'accept_opt_in' | 'accept_opt_out' | 'defer' | 'escape' | 'skip_rendering';
+export type GroveDecision = 'accept_opt_in' | 'accept_opt_out' | 'escape' | 'skip_rendering';
 
 type Props = {
   showIfAlreadyViewed: boolean;
@@ -37,48 +37,6 @@ const NEW_TERMS_ASCII = ` _____________
  |  ----------  |
  |              |
  |______________|`;
-
-function GracePeriodContentBody(): React.ReactNode {
-  return (
-    <>
-      <Text>
-        An update to our Consumer Terms and Privacy Policy will take effect on <Text bold>October 8, 2025</Text>. You
-        can accept the updated terms today.
-      </Text>
-
-      <Box flexDirection="column">
-        <Text>What&apos;s changing?</Text>
-
-        <Box paddingLeft={1}>
-          <Text>
-            <Text>· </Text>
-            <Text bold>You can help improve Clew Code </Text>
-            <Text>
-              — Allow the use of your chats and coding sessions to train and improve Anthropic AI models. Change anytime
-              in your Privacy Settings (<Link url={'https://clew-code.org/settings/privacy'}></Link>
-              ).
-            </Text>
-          </Text>
-        </Box>
-        <Box paddingLeft={1}>
-          <Text>
-            <Text>· </Text>
-            <Text bold>Updates to data retention </Text>
-            <Text>
-              — To help us improve our AI models and safety protections, we&apos;re extending data retention to 5 years.
-            </Text>
-          </Text>
-        </Box>
-      </Box>
-
-      <Text>
-        Learn more (<Link url={'https://www.anthropic.com/news/updates-to-our-consumer-terms'}></Link>) or read the
-        updated Consumer Terms (<Link url={'https://anthropic.com/legal/terms'}></Link>) and Privacy Policy (
-        <Link url={'https://anthropic.com/legal/privacy'}></Link>)
-      </Text>
-    </>
-  );
-}
 
 function PostGracePeriodContentBody(): React.ReactNode {
   return (
@@ -141,7 +99,7 @@ export function GroveDialog({ showIfAlreadyViewed, location, onDone }: Props): R
       // Log that the Grove policy dialog was shown
       logEvent('tengu_grove_policy_viewed', {
         location: location as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
-        dismissable: config?.notice_is_grace_period as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+        dismissable: false as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
       });
     }
 
@@ -158,14 +116,14 @@ export function GroveDialog({ showIfAlreadyViewed, location, onDone }: Props): R
     return null;
   }
 
-  async function onChange(value: 'accept_opt_in' | 'accept_opt_out' | 'defer' | 'escape') {
+  // ponytail: grace period ended Oct 2025 — no defer path, re-add if terms update recurs
+  async function onChange(value: 'accept_opt_in' | 'accept_opt_out' | 'escape') {
     switch (value) {
       case 'accept_opt_in': {
         await updateGroveSettings(true);
         logEvent('tengu_grove_policy_submitted', {
           state: true,
-          dismissable:
-            groveConfig?.notice_is_grace_period as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+          dismissable: false as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
         });
         break;
       }
@@ -173,16 +131,10 @@ export function GroveDialog({ showIfAlreadyViewed, location, onDone }: Props): R
         await updateGroveSettings(false);
         logEvent('tengu_grove_policy_submitted', {
           state: false,
-          dismissable:
-            groveConfig?.notice_is_grace_period as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+          dismissable: false as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
         });
         break;
       }
-      case 'defer':
-        logEvent('tengu_grove_policy_dismissed', {
-          state: true,
-        });
-        break;
       case 'escape':
         logEvent('tengu_grove_policy_escaped', {});
         break;
@@ -210,10 +162,6 @@ export function GroveDialog({ showIfAlreadyViewed, location, onDone }: Props): R
       ];
 
   function handleCancel(): void {
-    if (groveConfig?.notice_is_grace_period) {
-      void onChange('defer');
-      return;
-    }
     void onChange('escape');
   }
 
@@ -235,7 +183,7 @@ export function GroveDialog({ showIfAlreadyViewed, location, onDone }: Props): R
     >
       <Box flexDirection="row">
         <Box flexDirection="column" gap={1} flexGrow={1}>
-          {groveConfig?.notice_is_grace_period ? <GracePeriodContentBody /> : <PostGracePeriodContentBody />}
+          <PostGracePeriodContentBody />
         </Box>
         <Box flexShrink={0}>
           <Text color="professionalBlue">{NEW_TERMS_ASCII}</Text>
@@ -249,12 +197,8 @@ export function GroveDialog({ showIfAlreadyViewed, location, onDone }: Props): R
         </Box>
 
         <Select
-          options={[
-            ...acceptOptions,
-            // Only show "Not now" if in grace period
-            ...(groveConfig?.notice_is_grace_period ? [{ label: 'Not now', value: 'defer' }] : []),
-          ]}
-          onChange={value => onChange(value as 'accept_opt_in' | 'accept_opt_out' | 'defer')}
+          options={acceptOptions}
+          onChange={value => onChange(value as 'accept_opt_in' | 'accept_opt_out')}
           onCancel={handleCancel}
         />
       </Box>

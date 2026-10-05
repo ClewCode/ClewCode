@@ -1313,12 +1313,10 @@ export async function* ask({
     orphanedPermission,
   });
 
-  // Taste + Shining auto-learning (fire-and-forget)
+  // Shining observer (fire-and-forget)
   try {
     const promptText = typeof prompt === 'string' ? prompt : '';
     if (promptText) {
-      const { hookExplicitPreference } = await import('./taste/hooks.js');
-      hookExplicitPreference(promptText);
       const { observe } = await import('./shining/observer.js');
       observe({ type: 'user_intent', text: promptText });
       const { predict } = await import('./shining/predictor.js');

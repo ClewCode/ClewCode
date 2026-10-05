@@ -28,19 +28,16 @@ const TERMINAL_CAPTURE_TOOL_NAME = feature('TERMINAL_PANEL')
   ? (require('../../tools/TerminalCaptureTool/prompt.js') as typeof import('../../tools/TerminalCaptureTool/prompt.js'))
       .TERMINAL_CAPTURE_TOOL_NAME
   : null;
-const OVERFLOW_TEST_TOOL_NAME = feature('OVERFLOW_TEST_TOOL')
-  ? (require('../../tools/OverflowTestTool/OverflowTestTool.js') as any).OVERFLOW_TEST_TOOL_NAME
-  : null;
+// ponytail: OVERFLOW_TEST_TOOL ant-only stub deleted, re-add require when real impl ships
+const OVERFLOW_TEST_TOOL_NAME = null;
 const VERIFY_PLAN_EXECUTION_TOOL_NAME =
   process.env.USER_TYPE === 'ant'
     ? (
         require('../../tools/VerifyPlanExecutionTool/constants.js') as typeof import('../../tools/VerifyPlanExecutionTool/constants.js')
       ).VERIFY_PLAN_EXECUTION_TOOL_NAME
     : null;
-const WORKFLOW_TOOL_NAME = feature('WORKFLOW_SCRIPTS')
-  ? (require('../../tools/WorkflowTool/constants.js') as typeof import('../../tools/WorkflowTool/constants.js'))
-      .WORKFLOW_TOOL_NAME
-  : null;
+// ponytail: WORKFLOW_SCRIPTS ant-only stub deleted, re-add require when real impl ships
+const WORKFLOW_TOOL_NAME = null;
 /* eslint-enable @typescript-eslint/no-require-imports */
 
 /**

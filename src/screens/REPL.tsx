@@ -21,8 +21,6 @@ import { TranscriptSearchBar } from './REPL/TranscriptSearchBar.js';
 import { useInput } from '../ink.js';
 import { useSearchInput } from '../hooks/useSearchInput.js';
 import { useTerminalSize } from '../hooks/useTerminalSize.js';
-import { useSearchHighlight } from '../ink/hooks/use-search-highlight.js';
-import type { JumpHandle } from '../components/VirtualMessageList.js';
 import { renderMessagesToPlainText } from '../utils/exportRenderer.js';
 import { openFileInExternalEditor } from '../utils/editor.js';
 import { writeFile } from 'fs/promises';
@@ -167,7 +165,6 @@ import {
   useVoiceIntegration,
   VoiceKeybindingHandler,
   useFrustrationDetection,
-  useAntOrgWarningNotification,
   getCoordinatorUserContext,
   proactiveModule,
   PROACTIVE_NO_OP_SUBSCRIBE,
@@ -218,6 +215,7 @@ import {
   formatCommandInputTags,
   hasMessageUuid,
   limitMessagesToLastNExchanges,
+  isDuplicateAdjacentAssistantText,
 } from '../utils/messages.js';
 import { generateSessionTitle } from '../utils/sessionTitle.js';
 import { appendLongTurnRecap } from '../services/longTurnRecap.js';
@@ -377,10 +375,7 @@ import { useFeedbackSurvey } from 'src/components/FeedbackSurvey/useFeedbackSurv
 import { useMemorySurvey } from 'src/components/FeedbackSurvey/useMemorySurvey.js';
 import { usePostCompactSurvey } from 'src/components/FeedbackSurvey/usePostCompactSurvey.js';
 import { FeedbackSurvey } from 'src/components/FeedbackSurvey/FeedbackSurvey.js';
-import { useInstallMessages } from 'src/hooks/notifs/useInstallMessages.js';
 import { useAwaySummary } from 'src/hooks/useAwaySummary.js';
-import { useChromeExtensionNotification } from 'src/hooks/useChromeExtensionNotification.js';
-import { useOfficialMarketplaceNotification } from 'src/hooks/useOfficialMarketplaceNotification.js';
 import { usePromptsFromClaudeInChrome } from 'src/hooks/usePromptsFromClaudeInChrome.js';
 import { getTipToShowOnSpinner, recordShownTip } from 'src/services/tips/tipScheduler.js';
 import type { Theme } from 'src/utils/theme.js';
@@ -395,31 +390,21 @@ import { SANDBOX_NETWORK_ACCESS_TOOL_NAME } from 'src/cli/structuredIO.js';
 import { useFileHistorySnapshotInit } from 'src/hooks/useFileHistorySnapshotInit.js';
 import { SandboxPermissionRequest } from 'src/components/permissions/SandboxPermissionRequest.js';
 import { SandboxViolationExpandedView } from 'src/components/SandboxViolationExpandedView.js';
-import { useSettingsErrors } from 'src/hooks/notifs/useSettingsErrors.js';
 import { useMcpConnectivityStatus } from 'src/hooks/notifs/useMcpConnectivityStatus.js';
-import { useAutoModeUnavailableNotification } from 'src/hooks/notifs/useAutoModeUnavailableNotification.js';
 import { AUTO_MODE_DESCRIPTION } from 'src/components/AutoModeOptInDialog.js';
-import { useLspInitializationNotification } from 'src/hooks/notifs/useLspInitializationNotification.js';
-import { useLspPluginRecommendation } from 'src/hooks/useLspPluginRecommendation.js';
 import { LspRecommendationMenu } from 'src/components/LspRecommendation/LspRecommendationMenu.js';
-import { useClaudeCodeHintRecommendation } from 'src/hooks/useClaudeCodeHintRecommendation.js';
 import { PluginHintMenu } from 'src/components/ClaudeCodeHint/PluginHintMenu.js';
 import {
   DesktopUpsellStartup,
   shouldShowDesktopUpsellStartup,
 } from 'src/components/DesktopUpsell/DesktopUpsellStartup.js';
-import { usePluginInstallationStatus } from 'src/hooks/notifs/usePluginInstallationStatus.js';
-import { usePluginAutoupdateNotification } from 'src/hooks/notifs/usePluginAutoupdateNotification.js';
 import { performStartupChecks } from 'src/utils/plugins/performStartupChecks.js';
 import { UserTextMessage } from 'src/components/messages/UserTextMessage.js';
 import { AwsAuthStatusBox } from '../components/AwsAuthStatusBox.js';
-import { useRateLimitWarningNotification } from 'src/hooks/notifs/useRateLimitWarningNotification.js';
-import { useDeprecationWarningNotification } from 'src/hooks/notifs/useDeprecationWarningNotification.js';
-import { useNpmDeprecationNotification } from 'src/hooks/notifs/useNpmDeprecationNotification.js';
 import { useIDEStatusIndicator } from 'src/hooks/notifs/useIDEStatusIndicator.js';
-import { useModelMigrationNotifications } from 'src/hooks/notifs/useModelMigrationNotifications.js';
-import { useCanSwitchToExistingSubscription } from 'src/hooks/notifs/useCanSwitchToExistingSubscription.js';
-import { useTeammateLifecycleNotification } from 'src/hooks/notifs/useTeammateShutdownNotification.js';
+import { useReplNotifications } from './REPL/useReplNotifications.js';
+import { useTranscriptSearch } from './REPL/useTranscriptSearch.js';
+import { useSwarmBridge } from './REPL/useSwarmBridge.js';
 import {
   AutoRunIssueNotification,
   shouldAutoRunIssue,
@@ -431,7 +416,6 @@ import type { HookProgress } from '../types/hooks.js';
 import { IssueFlagBanner } from '../components/PromptInput/IssueFlagBanner.js';
 import { useIssueFlagBanner } from '../hooks/useIssueFlagBanner.js';
 import { CompanionSprite, CompanionFloatingBubble, MIN_COLS_FOR_FULL_SPRITE } from '../buddy/CompanionSprite.js';
-import { DevBar } from '../components/DevBar.js';
 // Session manager removed - using AppState now
 import type { RemoteSessionConfig } from '../remote/RemoteSessionManager.js';
 import { REMOTE_SAFE_COMMANDS } from '../commands.js';
@@ -728,26 +712,12 @@ export function REPL({
   const [showEffortCallout, setShowEffortCallout] = useState(() => shouldShowEffortCallout(mainLoopModel));
   const showRemoteCallout = useAppState(s => s.showRemoteCallout);
   const [showDesktopUpsellStartup, setShowDesktopUpsellStartup] = useState(() => shouldShowDesktopUpsellStartup());
-  // notifications
-  useModelMigrationNotifications();
-  useCanSwitchToExistingSubscription();
+  // notifications (registration order preserved — these hooks register
+  // side-effects, so relative order matters)
   useIDEStatusIndicator({ ideSelection, mcpClients, ideInstallationStatus });
   useMcpConnectivityStatus({ mcpClients });
-  useAutoModeUnavailableNotification();
-  usePluginInstallationStatus();
-  usePluginAutoupdateNotification();
-  useSettingsErrors();
-  useRateLimitWarningNotification(mainLoopModel);
-  useDeprecationWarningNotification(mainLoopModel);
-  useNpmDeprecationNotification();
-  useAntOrgWarningNotification();
-  useInstallMessages();
-  useChromeExtensionNotification();
-  useOfficialMarketplaceNotification();
-  useLspInitializationNotification();
-  useTeammateLifecycleNotification();
-  const { recommendation: lspRecommendation, handleResponse: handleLspResponse } = useLspPluginRecommendation();
-  const { recommendation: hintRecommendation, handleResponse: handleHintResponse } = useClaudeCodeHintRecommendation();
+  const { lspRecommendation, handleLspResponse, hintRecommendation, handleHintResponse } =
+    useReplNotifications(mainLoopModel);
 
   // Memoize the combined initial tools array to prevent reference changes
   const combinedInitialTools = useMemo(() => {
@@ -945,8 +915,7 @@ export function REPL({
 
   // Start time of the first turn that had swarm teammates running
   // Used to compute total elapsed time (including teammate execution) for the deferred message
-  const swarmStartTimeRef = React.useRef<number | null>(null);
-  const swarmBudgetInfoRef = React.useRef<{ tokens: number; limit: number; nudges: number } | undefined>(undefined);
+  const { swarmStartTimeRef, swarmBudgetInfoRef } = useSwarmBridge();
 
   // Ref to track current focusedInputDialog for use in callbacks
   // This avoids stale closures when checking dialog state in timer callbacks
@@ -3070,7 +3039,11 @@ export function REPL({
               return [...oldMessages, newMessage];
             });
           } else {
-            setMessages(oldMessages => [...oldMessages, newMessage]);
+            setMessages(oldMessages =>
+              isDuplicateAdjacentAssistantText(oldMessages.at(-1), newMessage)
+                ? oldMessages
+                : [...oldMessages, newMessage],
+            );
           }
           // Block ticks on API errors to prevent tick → error → tick
           // runaway loops (e.g., auth failure, rate limit, blocking limit).
@@ -3124,6 +3097,12 @@ export function REPL({
       mainLoopModelParam: string,
       effort?: EffortValue,
     ) => {
+      if (shouldQuery) {
+        // Start one thinking buffer per user turn. The stream handler may
+        // receive multiple provider thinking blocks while tools loop.
+        setStreamingThinking(null);
+      }
+
       // Prepare IDE integration for new prompt. Read mcpClients fresh from
       // store — useManageMCPConnections may have populated it since the
       // render that captured this closure (same pattern as computeTools).
@@ -5069,69 +5048,27 @@ export function REPL({
   // (not inside the `if (screen === 'transcript')` branch below); isActive
   // gates the useInput. Query persists across bar open/close so n/N keep
   // working after Enter dismisses the bar (less semantics).
-  const jumpRef = useRef<JumpHandle | null>(null);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchCount, setSearchCount] = useState(0);
-  const [searchCurrent, setSearchCurrent] = useState(0);
-  const onSearchMatchesChange = useCallback((count: number, current: number) => {
-    setSearchCount(count);
-    setSearchCurrent(current);
-  }, []);
-
-  useInput(
-    (input, key, event) => {
-      if (key.ctrl || key.meta) return;
-      // No Esc handling here — less has no navigating mode. Search state
-      // (highlights, n/N) is just state. Esc/q/ctrl+c → transcript:exit
-      // (ungated). Highlights clear on exit via the screen-change effect.
-      if (input === '/') {
-        // Capture scrollTop NOW — typing is a preview, 0-matches snaps
-        // back here. Synchronous ref write, fires before the bar's
-        // mount-effect calls setSearchQuery.
-        jumpRef.current?.setAnchor();
-        setSearchOpen(true);
-        event.stopImmediatePropagation();
-        return;
-      }
-      // Held-key batching: tokenizer coalesces to 'nnn'. Same uniform-batch
-      // pattern as modalPagerAction in ScrollKeybindingHandler.tsx. Each
-      // repeat is a step (n isn't idempotent like g).
-      const c = input[0];
-      if ((c === 'n' || c === 'N') && input === c.repeat(input.length) && searchCount > 0) {
-        const fn = c === 'n' ? jumpRef.current?.nextMatch : jumpRef.current?.prevMatch;
-        if (fn) for (let i = 0; i < input.length; i++) fn();
-        event.stopImmediatePropagation();
-      }
-    },
-    // Search needs virtual scroll (jumpRef drives VirtualMessageList). [
-    // kills it, so !dumpMode — after [ there's nothing to jump in.
-    {
-      isActive: screen === 'transcript' && virtualScrollActive && !searchOpen && !dumpMode,
-    },
-  );
-  const { setQuery: setHighlight, scanElement, setPositions } = useSearchHighlight();
-
-  // Resize → abort search. Positions are (msg, query, WIDTH)-keyed —
-  // cached positions are stale after a width change (new layout, new
-  // wrapping). Clearing searchQuery triggers VML's setSearchQuery('')
-  // which clears positionsCache + setPositions(null). Bar closes.
-  // User hits / again → fresh everything.
   const transcriptCols = useTerminalSize().columns;
-  const prevColsRef = React.useRef(transcriptCols);
-  React.useEffect(() => {
-    if (prevColsRef.current !== transcriptCols) {
-      prevColsRef.current = transcriptCols;
-      if (searchQuery || searchOpen) {
-        setSearchOpen(false);
-        setSearchQuery('');
-        setSearchCount(0);
-        setSearchCurrent(0);
-        jumpRef.current?.disarmSearch();
-        setHighlight('');
-      }
-    }
-  }, [transcriptCols, searchQuery, searchOpen, setHighlight]);
+  const {
+    jumpRef,
+    searchOpen,
+    setSearchOpen,
+    searchQuery,
+    setSearchQuery,
+    searchCount,
+    setSearchCount,
+    searchCurrent,
+    setSearchCurrent,
+    onSearchMatchesChange,
+    setHighlight,
+    scanElement,
+    setPositions,
+  } = useTranscriptSearch({
+    active: screen === 'transcript',
+    virtualScrollActive,
+    dumpMode,
+    columns: transcriptCols,
+  });
 
   // Transcript escape hatches. Bare letters in modal context (no prompt
   // competing for input) — same class as g/G/j/k in ScrollKeybindingHandler.
@@ -6449,8 +6386,6 @@ export function REPL({
                     }}
                   />
                 )}
-                {/* @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle */}
-                {'external' === 'ant' && <DevBar />}
               </Box>
               {companionVisible ? <CompanionSprite /> : null}
             </Box>

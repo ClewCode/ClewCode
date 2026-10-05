@@ -55,7 +55,6 @@ import { budgetedInject } from '../memory/budgetInjector.js';
 import { getSessionGoalSync } from '../utils/sessionGoalState.js';
 import { isUndercover } from '../utils/undercover.js';
 import { isMcpInstructionsDeltaEnabled } from '../utils/mcpInstructionsDelta.js';
-import { loadTastePrompt } from '../taste/index.js';
 import { loadRepoMapPrompt } from '../repomap/index.js';
 import { loadShiningPrompt } from '../shining/prompt.js';
 
@@ -446,7 +445,6 @@ export async function getSystemPrompt(
     systemPromptSection('session_guidance', () => getSessionSpecificGuidanceSection(enabledTools, skillToolCommands)),
     systemPromptSection('memory', () => loadMemoryPrompt()),
     systemPromptSection('proactive_memory', () => getProactiveMemoryContext()),
-    systemPromptSection('taste', () => loadTastePrompt()),
     systemPromptSection('shining', () => loadShiningPrompt()),
     systemPromptSection('repomap', () => loadRepoMapPrompt()),
     systemPromptSection('budgeted_memory', () => loadBudgetedMemory()),
