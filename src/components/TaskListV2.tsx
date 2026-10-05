@@ -14,6 +14,8 @@ import { formatDuration, truncateToWidth } from '../utils/format.js';
 import { isTodoV2Enabled, type Task } from '../utils/tasks.js';
 import type { Theme } from '../utils/theme.js';
 import ThemedText from './design-system/ThemedText.js';
+import { compareTaskIds, prioritizeTasks, RECENT_COMPLETED_TTL_MS } from './taskListUtils.js';
+import { useTaskTiming } from './useTaskTiming.js';
 
 type Props = {
   tasks: Task[];
@@ -26,17 +28,9 @@ export type TaskDisplayGroup = {
   tasks: Task[];
 };
 
-const RECENT_COMPLETED_TTL_MS = 30_000;
 const DEFAULT_GROUP_TITLE = 'Execution';
 
-function byIdAsc(a: Task, b: Task): number {
-  const aNum = parseInt(a.id, 10);
-  const bNum = parseInt(b.id, 10);
-  if (!Number.isNaN(aNum) && !Number.isNaN(bNum)) {
-    return aNum - bNum;
-  }
-  return a.id.localeCompare(b.id);
-}
+const byIdAsc = compareTaskIds;
 
 function readGroupTitle(task: Task): string {
   const value = task.metadata?.group;
@@ -66,106 +60,17 @@ export function buildTaskDisplayGroups(tasks: Task[]): TaskDisplayGroup[] {
     .sort((a, b) => a.order - b.order || byIdAsc(a.tasks[0]!, b.tasks[0]!) || a.title.localeCompare(b.title));
 }
 
-export function toRomanNumeral(value: number): string {
-  const numerals: Array<[number, string]> = [
-    [1000, 'M'],
-    [900, 'CM'],
-    [500, 'D'],
-    [400, 'CD'],
-    [100, 'C'],
-    [90, 'XC'],
-    [50, 'L'],
-    [40, 'XL'],
-    [10, 'X'],
-    [9, 'IX'],
-    [5, 'V'],
-    [4, 'IV'],
-    [1, 'I'],
-  ];
-  let remaining = Math.max(1, Math.floor(value));
-  let result = '';
-  for (const [amount, numeral] of numerals) {
-    while (remaining >= amount) {
-      result += numeral;
-      remaining -= amount;
-    }
-  }
-  return result;
-}
+/** Indent for the group header row, in spaces. */
+const GROUP_INDENT = '  ';
+/** Indent for task rows nested under a group header, in spaces. */
+const TASK_INDENT = '    ';
 
 export function TaskListV2({ tasks, isStandalone = false }: Props): React.ReactNode {
   const teamContext = useAppState(s => s.teamContext);
   const appStateTasks = useAppState(s => s.tasks);
-  const [, forceUpdate] = React.useState(0);
   const { rows, columns } = useTerminalSize();
-
-  // Track when each task was last observed transitioning to completed
-  const completionTimestampsRef = React.useRef(new Map<string, number>());
-  const previousCompletedIdsRef = React.useRef<Set<string> | null>(null);
-  if (previousCompletedIdsRef.current === null) {
-    previousCompletedIdsRef.current = new Set(tasks.filter(t => t.status === 'completed').map(t => t.id));
-  }
+  const { now, completionTimestampsRef, startTimestampsRef } = useTaskTiming(tasks);
   const maxDisplay = rows <= 10 ? 0 : Math.min(10, Math.max(3, rows - 14));
-
-  // Update completion timestamps: reset when a task transitions to completed
-  const currentCompletedIds = new Set(tasks.filter(t => t.status === 'completed').map(t => t.id));
-  const now = Date.now();
-  for (const id of currentCompletedIds) {
-    if (!previousCompletedIdsRef.current.has(id)) {
-      completionTimestampsRef.current.set(id, now);
-    }
-  }
-  for (const id of completionTimestampsRef.current.keys()) {
-    if (!currentCompletedIds.has(id)) {
-      completionTimestampsRef.current.delete(id);
-    }
-  }
-  previousCompletedIdsRef.current = currentCompletedIds;
-
-  // Track when in_progress tasks started (for elapsed time display)
-  const startTimestampsRef = React.useRef(new Map<string, number>());
-  const previousInProgressIdsRef = React.useRef<Set<string> | null>(null);
-  if (previousInProgressIdsRef.current === null) {
-    previousInProgressIdsRef.current = new Set(tasks.filter(t => t.status === 'in_progress').map(t => t.id));
-  }
-  const currentInProgressIds = new Set(tasks.filter(t => t.status === 'in_progress').map(t => t.id));
-  for (const id of currentInProgressIds) {
-    if (!previousInProgressIdsRef.current.has(id)) {
-      startTimestampsRef.current.set(id, Date.now());
-    }
-  }
-  for (const id of startTimestampsRef.current.keys()) {
-    if (!currentInProgressIds.has(id)) {
-      startTimestampsRef.current.delete(id);
-    }
-  }
-  previousInProgressIdsRef.current = currentInProgressIds;
-
-  // Schedule re-render when the next recent completion expires.
-  // Depend on `tasks` so the timer is only reset when the task list changes,
-  // not on every render (which was causing unnecessary work).
-  React.useEffect(() => {
-    if (completionTimestampsRef.current.size === 0) {
-      return;
-    }
-    const currentNow = Date.now();
-    let earliestExpiry = Infinity;
-    for (const ts of completionTimestampsRef.current.values()) {
-      const expiry = ts + RECENT_COMPLETED_TTL_MS;
-      if (expiry > currentNow && expiry < earliestExpiry) {
-        earliestExpiry = expiry;
-      }
-    }
-    if (earliestExpiry === Infinity) {
-      return;
-    }
-    const timer = setTimeout(
-      forceUpdate => forceUpdate((n: number) => n + 1),
-      earliestExpiry - currentNow,
-      forceUpdate,
-    );
-    return () => clearTimeout(timer);
-  }, []);
 
   if (!isTodoV2Enabled()) {
     return null;
@@ -239,43 +144,12 @@ export function TaskListV2({ tasks, isStandalone = false }: Props): React.ReactN
   // Check if we need to truncate
   const needsTruncation = tasks.length > maxDisplay;
 
-  let visibleTasks: Task[];
-  let hiddenTasks: Task[];
-
-  if (needsTruncation) {
-    // Prioritize: recently completed (within 30s), in-progress, pending, older completed
-    const recentCompleted: Task[] = [];
-    const olderCompleted: Task[] = [];
-    for (const task of tasks.filter(t => t.status === 'completed')) {
-      const ts = completionTimestampsRef.current.get(task.id);
-      if (ts && now - ts < RECENT_COMPLETED_TTL_MS) {
-        recentCompleted.push(task);
-      } else {
-        olderCompleted.push(task);
-      }
-    }
-    recentCompleted.sort(byIdAsc);
-    olderCompleted.sort(byIdAsc);
-    const inProgress = tasks.filter(t => t.status === 'in_progress').sort(byIdAsc);
-    const pending = tasks
-      .filter(t => t.status === 'pending')
-      .sort((a, b) => {
-        const aBlocked = a.blockedBy.some(id => unresolvedTaskIds.has(id));
-        const bBlocked = b.blockedBy.some(id => unresolvedTaskIds.has(id));
-        if (aBlocked !== bBlocked) {
-          return aBlocked ? 1 : -1;
-        }
-        return byIdAsc(a, b);
-      });
-
-    const prioritized = [...recentCompleted, ...inProgress, ...pending, ...olderCompleted];
-    visibleTasks = prioritized.slice(0, maxDisplay);
-    hiddenTasks = prioritized.slice(maxDisplay);
-  } else {
-    // No truncation needed — sort by ID for stable ordering
-    visibleTasks = [...tasks].sort(byIdAsc);
-    hiddenTasks = [];
-  }
+  const { visibleTasks, hiddenTasks } = prioritizeTasks(
+    tasks,
+    completionTimestampsRef.current,
+    now,
+    needsTruncation ? maxDisplay : tasks.length,
+  );
 
   let hiddenSummary = '';
   if (hiddenTasks.length > 0) {
@@ -292,37 +166,39 @@ export function TaskListV2({ tasks, isStandalone = false }: Props): React.ReactN
     if (hiddenCompleted > 0) {
       parts.push(`${hiddenCompleted} completed`);
     }
-    hiddenSummary = ` … +${parts.join(', ')}`;
+    hiddenSummary = `+${parts.join(', ')}`;
   }
 
   const groups = buildTaskDisplayGroups(visibleTasks);
+  const singleGroup = groups.length === 1;
   const content = (
     <>
-      {groups.map((group, groupIndex) => {
-        const isLastGroup = groupIndex === groups.length - 1 && !hiddenSummary;
+      {groups.map(group => {
         const groupCompleted = count(group.tasks, task => task.status === 'completed');
         const groupActive = group.tasks.some(task => task.status === 'in_progress');
         const groupDone = groupCompleted === group.tasks.length;
-        const groupBranch = isLastGroup ? '└─' : '├─';
-        const childIndent = isLastGroup ? '   ' : '│  ';
 
         return (
           <Box key={group.title} flexDirection="column">
-            <Box>
-              <Text dimColor>{groupBranch} </Text>
-              <Text color={groupActive ? 'success' : undefined} dimColor={groupDone} bold={groupActive}>
-                {toRomanNumeral(groupIndex + 1)}. {group.title}
-              </Text>
-              <Text dimColor>
-                {' · '}
-                {groupCompleted}/{group.tasks.length}
-              </Text>
-            </Box>
-            {group.tasks.map((task, taskIndex) => (
+            {/* A lone group is named on the TODO title line (see TitleRow), so it
+                needs no header of its own. Several groups each get one. */}
+            {!singleGroup && (
+              <Box>
+                <Text dimColor>{GROUP_INDENT}</Text>
+                <Text color={groupActive ? 'permission' : undefined} dimColor={groupDone} bold={groupActive}>
+                  {figures.pointerSmall} {group.title}
+                </Text>
+                <Text dimColor>
+                  {'  '}
+                  {groupCompleted}/{group.tasks.length}
+                </Text>
+              </Box>
+            )}
+            {group.tasks.map(task => (
               <TaskItem
                 key={task.id}
                 task={task}
-                prefix={`${childIndent}${taskIndex === group.tasks.length - 1 ? '└─' : '├─'} `}
+                prefix={singleGroup ? GROUP_INDENT : TASK_INDENT}
                 ownerColor={task.owner ? teammateColors[task.owner] : undefined}
                 openBlockers={task.blockedBy.filter(id => unresolvedTaskIds.has(id))}
                 activity={task.owner ? teammateActivity[task.owner] : undefined}
@@ -338,26 +214,28 @@ export function TaskListV2({ tasks, isStandalone = false }: Props): React.ReactN
           </Box>
         );
       })}
-      {maxDisplay > 0 && hiddenSummary && <Text dimColor>└─{hiddenSummary}</Text>}
+      {maxDisplay > 0 && hiddenSummary && (
+        <Box>
+          <Text dimColor>{singleGroup ? GROUP_INDENT : TASK_INDENT}</Text>
+          <Text dimColor>… {hiddenSummary}</Text>
+        </Box>
+      )}
     </>
   );
 
   const isPlanTodo = tasks.some(t => t.metadata?.fromPlan === true) || hasExitedPlanModeInSession();
   const todoTitle = isPlanTodo ? 'PLANS TODO' : 'TODO';
 
+  // A lone group is named on the TODO title line (see TitleRow). Several groups
+  // each get their own header with a per-group tally; the title keeps an
+  // overall count for context.
+  const onlyGroup = singleGroup ? groups[0] : undefined;
+  const titleSuffix = `${completedCount}/${tasks.length}${inProgressCount > 0 ? ` · ${inProgressCount} running` : ''}`;
+
   if (isStandalone) {
     return (
       <Box flexDirection="column" marginTop={1} marginLeft={2}>
-        <Box>
-          <Text color="success" bold>
-            {todoTitle}
-          </Text>
-          <Text dimColor>
-            {' '}
-            {completedCount}/{tasks.length}
-            {inProgressCount > 0 ? ` · ${inProgressCount} running` : ''}
-          </Text>
-        </Box>
+        <TitleRow title={todoTitle} groupTitle={onlyGroup?.title} suffix={titleSuffix} standalone />
         {content}
       </Box>
     );
@@ -365,10 +243,38 @@ export function TaskListV2({ tasks, isStandalone = false }: Props): React.ReactN
 
   return (
     <Box flexDirection="column">
-      <Text color="success" bold>
-        {todoTitle}
-      </Text>
+      <TitleRow title={todoTitle} groupTitle={onlyGroup?.title} suffix={titleSuffix} />
       {content}
+    </Box>
+  );
+}
+
+function TitleRow({
+  title,
+  groupTitle,
+  suffix,
+  standalone = false,
+}: {
+  title: string;
+  groupTitle?: string;
+  suffix: string;
+  standalone?: boolean;
+}): React.ReactNode {
+  return (
+    <Box>
+      <Text color={standalone ? 'permission' : 'success'} bold>
+        {title}
+      </Text>
+      {groupTitle && (
+        <Text dimColor>
+          {'  '}
+          {figures.pointerSmall} {groupTitle}
+        </Text>
+      )}
+      <Text dimColor>
+        {'  '}
+        {suffix}
+      </Text>
     </Box>
   );
 }
@@ -396,11 +302,11 @@ function getTaskIcon(
   }
   switch (status) {
     case 'completed':
-      return { icon: '☑', color: 'success' };
+      return { icon: '✓', color: 'success' };
     case 'in_progress':
-      return { icon: '☐', color: 'success' };
+      return { icon: '◐', color: 'permission' };
     case 'pending':
-      return { icon: '☐', color: undefined };
+      return { icon: '○', color: undefined };
   }
 }
 
@@ -441,14 +347,14 @@ function TaskItem({
     <Box flexDirection="column">
       <Box>
         <Text dimColor>{prefix}</Text>
-        <Text color={color}>{icon} </Text>
+        <Text color={color}>{icon}</Text>
         <Text
           bold={isInProgress}
           dimColor={isCompleted || (!isInProgress && !isBlocked)}
           strikethrough={isCompleted}
-          color={isBlocked ? 'warning' : isInProgress ? 'success' : undefined}
+          color={isBlocked ? 'warning' : isInProgress ? 'permission' : undefined}
         >
-          {displaySubject}
+          {` ${displaySubject}`}
         </Text>
         {elapsedStr && <Text dimColor> ({elapsedStr})</Text>}
         {showOwner && (

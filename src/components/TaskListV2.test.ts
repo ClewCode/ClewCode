@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { Task } from '../utils/tasks.js';
-import { buildTaskDisplayGroups, toRomanNumeral } from './TaskListV2.js';
+import { buildTaskDisplayGroups } from './TaskListV2.js';
 
 function task(id: string, subject: string, metadata?: Record<string, unknown>): Task {
   return {
@@ -31,9 +31,5 @@ describe('TaskListV2 display groups', () => {
 
     expect(groups).toHaveLength(1);
     expect(groups[0]?.title).toBe('Execution');
-  });
-
-  test('formats section indices as Roman numerals', () => {
-    expect([1, 4, 9, 12].map(toRomanNumeral)).toEqual(['I', 'IV', 'IX', 'XII']);
   });
 });

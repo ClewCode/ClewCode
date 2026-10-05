@@ -141,6 +141,24 @@ export function formatTokens(count: number): string {
   return formatNumber(count).replace('.0', '');
 }
 
+/** Compact age: "5s" / "3m" / "2h" / "4d" — shared display. */
+export function formatAge(ts: number, now: number = Date.now()): string {
+  const seconds = Math.max(0, Math.floor((now - ts) / 1000));
+  if (seconds < 60) return `${seconds}s`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h`;
+  return `${Math.floor(hours / 24)}d`;
+}
+
+/** "$1.23", "<$0.01" for dust, "$0.00" for zero/invalid — shared cost display. */
+export function formatCost(costUsd: number): string {
+  if (!Number.isFinite(costUsd) || costUsd <= 0) return '$0.00';
+  if (costUsd < 0.01) return '<$0.01';
+  return `$${costUsd.toFixed(2)}`;
+}
+
 type RelativeTimeStyle = 'long' | 'short' | 'narrow';
 
 type RelativeTimeOptions = {

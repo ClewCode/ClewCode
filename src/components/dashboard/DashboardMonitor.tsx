@@ -22,6 +22,7 @@ import {
   type TaskQueueEntry,
   watchQueue,
 } from '../../services/autonomous/taskQueue.js';
+import { formatAge, formatCost, formatTokens, truncateToWidth as truncate } from '../../utils/format.js';
 import { Divider } from '../design-system/Divider.js';
 import { ProgressBar } from '../design-system/ProgressBar.js';
 import { StatusIcon } from '../design-system/StatusIcon.js';
@@ -47,34 +48,6 @@ function parseTime(value: string | number | undefined): number {
   if (!value) return Date.now();
   const parsed = Date.parse(value);
   return Number.isFinite(parsed) ? parsed : Date.now();
-}
-
-function formatAge(ts: number): string {
-  const seconds = Math.max(0, Math.floor((Date.now() - ts) / 1000));
-  if (seconds < 60) return `${seconds}s`;
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  return `${hours}h`;
-}
-
-function formatTokens(tokens: number): string {
-  if (tokens >= 1_000_000) return `${(tokens / 1_000_000).toFixed(1)}M`;
-  if (tokens >= 1_000) return `${Math.round(tokens / 100) / 10}K`;
-  return String(tokens);
-}
-
-function formatCost(costUsd: number): string {
-  if (!Number.isFinite(costUsd) || costUsd <= 0) return '$0.00';
-  if (costUsd < 0.01) return '<$0.01';
-  return `$${costUsd.toFixed(2)}`;
-}
-
-function truncate(text: string, width: number): string {
-  if (width <= 0) return '';
-  if (text.length <= width) return text;
-  if (width <= 3) return text.slice(0, width);
-  return `${text.slice(0, width - 3)}...`;
 }
 
 function eventTokens(event: RuntimeEvent): number {

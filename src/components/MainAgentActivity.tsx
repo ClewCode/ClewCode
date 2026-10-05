@@ -3,6 +3,7 @@ import { useTerminalSize } from '../hooks/useTerminalSize.js';
 import { Box, Text } from '../ink.js';
 import { useAppState } from '../state/AppState.js';
 import { isLocalAgentTask, type LocalAgentTaskState } from '../tasks/LocalAgentTask/LocalAgentTask.js';
+import { formatAge, truncateToWidth as truncate } from '../utils/format.js';
 
 const CLOCK_INTERVAL_MS = 1000;
 const ANIMATION_INTERVAL_MS = 220;
@@ -83,21 +84,6 @@ export function buildMainAgentActivityModel(
   }
 
   return { counts, rows };
-}
-
-function truncate(value: string, width: number): string {
-  if (width <= 0) return '';
-  return value.length <= width ? value : `${value.slice(0, Math.max(0, width - 1))}…`;
-}
-
-function formatAge(timestamp: number, now: number): string {
-  const seconds = Math.max(0, Math.floor((now - timestamp) / 1000));
-  if (seconds < 60) return `${seconds}s`;
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h`;
-  return `${Math.floor(hours / 24)}d`;
 }
 
 function sectionLabel(section: AgentActivitySection): string {
